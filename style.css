@@ -101,7 +101,7 @@ body {
   padding: 2px;
 }
 
-.calc-buttons button {
+.calc-buttons button { 
   background: #2d2d2d;
   border: none;
   color: white;
