@@ -1,93 +1,158 @@
 /* TODO: implement a better font, add animation to floating windows, make buttons modern styled. */
 
-body {
+
+* {
   margin: 0;
-  height: 100vh;
-  background: #202020;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  overflow: hidden;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  user-select: none;
 }
+
+:root {
+  --bg: #000000;
+  --bg-image: none;
+  --win-bg: #0d0d0d;
+  --win-title: #1a0000;
+  --win-border: #2b0000;
+  --text: #ffffff;
+  --text-dim: #888888;
+  --btn: #1a0000;
+  --btn-hover: #2b0000;
+  --taskbar: #0d0000;
+  --taskbar-border: #2b0000;
+  --accent: #e00000;
+  --accent-hover: #ff1a1a;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+body.light {
+  --bg: #f3f3f3;
+  --win-bg: #ffffff;
+  --win-title: #f0f0f0;
+  --win-border: #d0d0d0;
+  --text: #000000;
+  --text-dim: #555555;
+  --btn: #e8e8e8;
+  --btn-hover: #d8d8d8;
+  --taskbar: #f3f3f3;
+  --taskbar-border: #d0d0d0;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-color 0.2s;
+}
+
 .icons {
   position: absolute;
   top: 20px;
   left: 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .icon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 70px;
+  width: 76px;
   cursor: pointer;
-  padding: 5px;
+  padding: 6px 4px;
   border-radius: 4px;
 }
 
 .icon:hover {
-  background: #2a2a2a;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.light .icon:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .icon img {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   margin-bottom: 4px;
 }
 
 .icon span {
-  color: white;
+  color: var(--text);
   font-size: 12px;
   text-align: center;
 }
 
-.calculator {
+.window {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 320px;
-  background: #202020;
-  border: 1px solid #3a3a3a;
+  background: var(--win-bg);
+  border: 1px solid var(--win-border);
   border-radius: 8px;
-  display: none; 
+  display: none;
+  color: var(--text);
+  box-shadow: var(--shadow);
 }
 
-.calculator.open {
+.window.open {
   display: block;
 }
 
-.calc-title {
-  background: #2b2b2b;
+.win-title {
+  background: var(--win-title);
   padding: 10px 14px;
-  color: white;
   font-size: 13px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--win-border);
   border-radius: 8px 8px 0 0;
+  cursor: move;
 }
 
-.close-btn {
-  background: none;
+.win-title span {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
   border: none;
-  color: #ccc;
-  font-size: 16px;
   cursor: pointer;
-  padding: 0 6px;
+  padding: 0;
 }
 
-.close-btn:hover {
-  background: #c42b1c;
-  color: white;
-  border-radius: 4px;
+.dot.green  { background: #28c840; }
+.dot.yellow { background: #febc2e; }
+.dot.red    { background: #ff5f57; }
+
+.dot:hover {
+  filter: brightness(1.25);
+}
+
+.calculator {
+  width: 320px;
 }
 
 .calc-screen {
-  background: #1c1c1c;
-  color: white;
+  background: var(--win-bg);
+  color: var(--text);
   font-size: 36px;
   text-align: right;
   padding: 20px 16px;
@@ -99,28 +164,141 @@ body {
   grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 2px;
   padding: 2px;
+  border-radius: 0 0 8px 8px;
 }
 
-.calc-buttons button { 
-  background: #2d2d2d;
+.calc-buttons button {
+  background: var(--btn);
   border: none;
-  color: white;
+  color: var(--text);
   font-size: 18px;
   padding: 16px 0;
   cursor: pointer;
   border-radius: 4px;
+  font-family: 'Inter', sans-serif;
 }
 
 .calc-buttons button:hover {
-  background: #3a3a3a;
+  background: var(--btn-hover);
 }
 
-.calc-buttons .blue {
-  background: #0078d4;
+.calc-buttons .accent {
+  background: var(--accent);
+  color: #fff;
 }
 
-.calc-buttons .blue:hover {
-  background: #1a88e0;
+.calc-buttons .accent:hover {
+  background: var(--accent-hover);
+}
+
+.notepad {
+  width: 480px;
+}
+
+.notepad textarea {
+  width: 100%;
+  height: 340px;
+  background: var(--win-bg);
+  color: var(--text);
+  border: none;
+  padding: 14px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  resize: none;
+  outline: none;
+  border-radius: 0 0 8px 8px;
+  line-height: 1.5;
+}
+
+.themeapp {
+  width: 380px;
+}
+
+.theme-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.theme-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+   font-weight: 500;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.bg-thumb {
+  width: 100%;
+  height: 52px;
+  border-radius: 6px;
+  border: 2px solid var(--win-border);
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  background-color: #1a1a1a;
+}
+
+.bg-thumb:hover,
+.bg-thumb.selected {
+  border-color: var(--accent);
+}
+
+.color-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--win-border);}
+
+.color-swatch:hover {
+  border-color: var(--accent);
+}
+
+.toggle-row {
+  display: flex;
+  gap: 8px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--win-border);
+  background: var(--btn);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+}
+
+.mode-btn:hover {
+  background: var(--btn-hover);
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .taskbar {
@@ -129,12 +307,13 @@ body {
   left: 0;
   right: 0;
   height: 48px;
-  background: #202020;
-  border-top: 1px solid #3a3a3a;
+  background: var(--taskbar);
+  border-top: 1px solid var(--taskbar-border);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  z-index: 100;
 }
 
 .taskbar button {
@@ -150,7 +329,11 @@ body {
 }
 
 .taskbar button:hover {
-  background: #2a2a2a;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.light .taskbar button:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .taskbar button img {
@@ -161,9 +344,10 @@ body {
 .clock {
   position: absolute;
   right: 16px;
-  bottom: 12px;
-  color: white;
+  bottom: 14px;
+  color: var(--text);
   font-size: 12px;
   text-align: right;
   line-height: 1.3;
+  z-index: 101;
 }
