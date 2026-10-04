@@ -8,11 +8,13 @@ A Simple Operating System which runs in your own Browser. It is loosely based of
 
 - A Working clock which syncs with your current time
 - A Calculator app for basic numerical operations and is a floating window which can be dragged.
+- A Notepad application
+- Themes app for chagning wallpaper to a preset or plain colour.
 
 ---
 
 # Tech Stack
 
--HTML
--CSS
--JavaScript
+- HTML
+- CSS
+- JavaScript
