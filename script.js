@@ -1,32 +1,27 @@
-// calculator variables
 var current = "0";
-var previous = null;
-var operator = null;
+var prev = null;
+var op = null;
 var reset = false;
 
-// show on screen
 function updateScreen() {
   document.getElementById("screen").innerText = current;
 }
 
-// open calculator
 function openCalc() {
   document.getElementById("calc").classList.add("open");
 }
 
-// close calculator
 function closeCalc() {
   document.getElementById("calc").classList.remove("open");
 }
 
-// number or dot press
 function press(val) {
   if (reset) {
     current = val;
     reset = false;
   } else {
-    if (val === "." && current.includes(".")) return;
-    if (current === "0" && val !== ".") {
+    if (val == "." && current.includes(".")) return;
+    if (current == "0" && val != ".") {
       current = val;
     } else {
       current = current + val;
@@ -35,80 +30,115 @@ function press(val) {
   updateScreen();
 }
 
-// operator press
-function pressOp(op) {
-  if (operator !== null && !reset) {
+function pressOp(o) {
+  if (op != null && !reset) {
     calculate();
   }
-  previous = current;
-  operator = op;
+  prev = current;
+  op = o;
   reset = true;
 }
 
-// equals
 function calculate() {
-  if (operator === null || previous === null) return;
-  var a = parseFloat(previous);
+  if (op == null || prev == null) return;
+  var a = parseFloat(prev);
   var b = parseFloat(current);
-  var result = 0;
-  if (operator === "+") result = a + b;
-  if (operator === "-") result = a - b;
-  if (operator === "*") result = a * b;
-  if (operator === "/") {
-    if (b === 0) {
+  var r = 0;
+
+  if (op == "+") r = a + b;
+  else if (op == "-") r = a - b;
+  else if (op == "*") r = a * b;
+  else if (op == "/") {
+    if (b == 0) {
       current = "Error";
       updateScreen();
-      previous = null;
-      operator = null;
+      prev = null;
+      op = null;
       reset = true;
       return;
     }
-    result = a / b;
+    r = a / b;
   }
-  result = Math.round(result * 100000000) / 100000000;
-  current = String(result);
-  previous = null;
-  operator = null;
+
+  r = Math.round(r * 100000000) / 100000000;
+  current = String(r);
+  prev = null;
+  op = null;
   reset = true;
   updateScreen();
 }
 
-// clear
 function clearScreen() {
   current = "0";
-  previous = null;
-  operator = null;
+  prev = null;
+  op = null;
   reset = false;
   updateScreen();
 }
 
-// backspace
 function backspace() {
   if (reset) {
     current = "0";
     reset = false;
   } else {
     current = current.slice(0, -1);
-    if (current === "") current = "0";
+    if (current == "") current = "0";
   }
   updateScreen();
 }
 
-// simple clock
 function updateClock() {
   var d = new Date();
   var h = d.getHours();
   var m = d.getMinutes();
-  var ampm = h >= 12 ? "PM" : "AM";
+  var ap = h >= 12 ? "PM" : "AM";
   h = h % 12;
-  if (h === 0) h = 12;
+  if (h == 0) h = 12;
   if (m < 10) m = "0" + m;
-  document.getElementById("clock").innerText = h + ":" + m + " " + ampm;
+  document.getElementById("clock").innerText = h + ":" + m + " " + ap;
 }
 updateClock();
 setInterval(updateClock, 1000);
 
-// open calculator on load
 window.onload = function() {
   openCalc();
+  makeDraggable(document.getElementById("calc"));
 };
+
+function makeDraggable(el) {
+  var bar = el.querySelector(".calc-title");
+  var dragging = false;
+  var sx = 0;
+  var sy = 0;
+  var sl = 0;
+  var st = 0;
+
+  bar.addEventListener("mousedown", function(e) {
+    if (e.target.classList.contains("close-btn")) return;
+
+    dragging = true;
+    var rect = el.getBoundingClientRect();
+    el.style.transform = "none";
+    el.style.left = rect.left + "px";
+    el.style.top = rect.top + "px";
+
+    sx = e.clientX;
+    sy = e.clientY;
+    sl = rect.left;
+    st = rect.top;
+
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", function(e) {
+    if (!dragging) return;
+    var dx = e.clientX - sx;
+    var dy = e.clientY - sy;
+    el.style.left = (sl + dx) + "px";
+    el.style.top = (st + dy) + "px";
+  });
+
+  document.addEventListener("mouseup", function() {
+    dragging = false;
+  });
+}
