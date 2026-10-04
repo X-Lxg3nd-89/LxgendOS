@@ -2,29 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LxgendOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="icons">
-    <div class="icon" onclick="openCalc()">
-      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB4PSI4IiB5PSI2IiB3aWR0aD0iMzIiIGhlaWdodD0iMzYiIHJ4PSI0IiBmaWxsPSIjMDA3OGQ0Ii8+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iMjQiIGhlaWdodD0iOCIgcng9IjIiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+    <div class="icon" onclick="openWin('calc')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB4PSI4IiB5PSI2IiB3aWR0aD0iMzIiIGhlaWdodD0iMzYiIHJ4PSI0IiBmaWxsPSIjZTAwIi8+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iMjQiIGhlaWdodD0iOCIgcng9IjIiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
       <span>Calculator</span>
+    </div>
+    <div class="icon" onclick="openWin('notepad')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB4PSIxMCIgeT0iNiIgd2lkdGg9IjI4IiBoZWlnaHQ9IjM2IiByeD0iMyIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjZTAwIiBzdHJva2Utd2lkdGg9IjIiLz48bGluZSB4MT0iMTYiIHkxPSIxNiIgeDI9IjMyIiB5Mj0iMTYiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSIyIi8+PGxpbmUgeDE9IjE2IiB5MT0iMjIiIHgyPSIzMiIgeTI9IjIyIiBzdHJva2U9IiM2NjYiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSIxNiIgeTE9IjI4IiB4Mj0iMjgiIHkyPSIyOCIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=">
+      <span>Notepad</span>
+    </div>
+    <div class="icon" onclick="openWin('theme')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48Y2lyY2xlIGN4PSIyNCIgY3k9IjI0IiByPSIxNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZTAwIiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNMjQgOHYxNiAxNiIgc3Ryb2tlPSIjZTAwIiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=">
+      <span>Theme</span>
     </div>
   </div>
 
-  <div class="calculator" id="calc">
-    <div class="calc-title">
+  <div class="window calculator" id="win-calc">
+    <div class="win-title" onmousedown="startDrag(event, 'win-calc')">
       <span>Calculator</span>
-      <button class="close-btn" onclick="closeCalc()">✕</button>
+      <div class="dots">
+        <button class="dot green" onclick="maxWin('calc')"></button>
+        <button class="dot yellow" onclick="minWin('calc')"></button>
+        <button class="dot red" onclick="closeWin('calc')"></button>
+      </div>
     </div>
     <div class="calc-screen" id="screen">0</div>
     <div class="calc-buttons">
       <button onclick="clearScreen()">C</button>
       <button onclick="backspace()">⌫</button>
       <button onclick="pressOp('/')">/</button>
-      <button onclick="pressOp('*')">×</button>
+      <button onclick="pressOp('*')">⌫</button>
 
       <button onclick="press('7')">7</button>
       <button onclick="press('8')">8</button>
@@ -39,19 +55,81 @@
       <button onclick="press('1')">1</button>
       <button onclick="press('2')">2</button>
       <button onclick="press('3')">3</button>
-      <button class="blue" onclick="calculate()" style="grid-row: span 2;">=</button>
+      <button class="accent" onclick="calculate()" style="grid-row: span 2;">=</button>
 
       <button onclick="press('0')" style="grid-column: span 2;">0</button>
       <button onclick="press('.')">.</button>
     </div>
   </div>
 
+  <div class="window notepad" id="win-notepad">
+    <div class="win-title" onmousedown="startDrag(event, 'win-notepad')">
+      <span>Notepad</span>
+      <div class="dots">
+        <button class="dot green" onclick="maxWin('notepad')"></button>
+        <button class="dot yellow" onclick="minWin('notepad')"></button>
+        <button class="dot red" onclick="closeWin('notepad')"></button>
+      </div>
+    </div>
+    <textarea id="notepad-text" placeholder="Start typing..."></textarea>
+  </div>
+
+  <div class="window themeapp" id="win-theme">
+    <div class="win-title" onmousedown="startDrag(event, 'win-theme')">
+      <span>Theme</span>
+      <div class="dots">
+        <button class="dot green" onclick="maxWin('theme')"></button>
+        <button class="dot yellow" onclick="minWin('theme')"></button>
+        <button class="dot red" onclick="closeWin('theme')"></button>
+      </div>
+    </div>
+    <div class="theme-body">
+      <div class="theme-section">
+        <div class="theme-label">Wallpaper</div>
+        <div class="theme-grid">
+          <div class="bg-thumb" onclick="setBg('BGs/bg1.png', this)" style="background-image:url('BGs/bg1.png')"></div>
+          <div class="bg-thumb" onclick="setBg('BGs/bg2.png', this)" style="background-image:url('BGs/bg2.png')"></div>
+          <div class="bg-thumb" onclick="setBg('BGs/bg3.png', this)" style="background-image:url('BGs/bg3.png')"></div>
+          <div class="bg-thumb" onclick="setBg('BGs/bg4.png', this)" style="background-image:url('BGs/bg4.png')"></div>
+          <div class="bg-thumb" onclick="setBg('BGs/bg5.png', this)" style="background-image:url('BGs/bg5.png')"></div>
+        </div>
+      </div>
+
+      <div class="theme-section">
+        <div class="theme-label">Solid</div>
+        <div class="color-row">
+          <div class="color-swatch" style="background:#000000" onclick="setBg('#000000')"></div>
+          <div class="color-swatch" style="background:#1a0000" onclick="setBg('#1a0000')"></div>
+          <div class="color-swatch" style="background:#2b0000" onclick="setBg('#2b0000')"></div>
+          <div class="color-swatch" style="background:#1a1a1a" onclick="setBg('#1a1a1a')"></div>
+          <div class="color-swatch" style="background:#0d0d1a" onclick="setBg('#0d0d1a')"></div>
+          <div class="color-swatch" style="background:#0d1a0d" onclick="setBg('#0d1a0d')"></div>
+          <div class="color-swatch" style="background:#1a0d1a" onclick="setBg('#1a0d1a')"></div>
+        </div>
+      </div>
+
+      <div class="theme-section">
+        <div class="theme-label">Mode</div>
+        <div class="toggle-row">
+          <button class="mode-btn active" id="mode-dark" onclick="setMode('dark')">Dark</button>
+          <button class="mode-btn" id="mode-light" onclick="setMode('light')">Light</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="taskbar">
-    <button onclick="openCalc()">
+    <button onclick="openWin('calc')">
       <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMTMiIHk9IjIiIHdpZHRoPSI5IiBoZWlnaHQ9IjkiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIyIiB5PSIxMyIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iI2ZmZiIvPjxyZWN0IHg9IjEzIiB5PSIxMyIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==">
     </button>
-    <button onclick="openCalc()">
-      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSI0IiB5PSIyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjAiIHJ4PSIyIiBmaWxsPSIjMDA3OGQ0Ii8+PHJlY3QgeD0iNiIgeT0iNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI4IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==">
+    <button onclick="openWin('calc')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSI0IiB5PSIyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjAiIHJ4PSIyIiBmaWxsPSIjZTAwIi8+PHJlY3QgeD0iNiIgeT0iNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI4IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==">
+    </button>
+    <button onclick="openWin('notepad')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSI1IiB5PSIzIiB3aWR0aD0iMTQiIGhlaWdodD0iMTgiIHJ4PSIyIiBmaWxsPSIjZmZmIiBzdHJva2U9IiNlMDAiLz48bGluZSB4MT0iOCIgeTE9IjgiIHgyPSIxNiIgeTI9IjgiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48bGluZSB4MT0iOCIgeTE9IjEyIiB4Mj0iMTYiIHkyPSIxMiIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjEuNSIvPjxsaW5lIHgxPSI4IiB5MT0iMTYiIHgyPSIxNCIgeTI9IjE2IiBzdHJva2U9IiM2NjYiIHN0cm9rZS13aWR0aD0iMS41Ii8+PC9zdmc+">
+    </button>
+    <button onclick="openWin('theme')">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI4IiBmaWxsPSJub25lIiBzdHJva2U9IiNlMDAiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik0xMiA0djggOCIgc3Ryb2tlPSIjZTAwIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=">
     </button>
   </div>
 
