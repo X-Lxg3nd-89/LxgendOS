@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LxgendOS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- desktop icons top left -->
+  <div class="icons">
+    <div class="icon" onclick="openCalc()">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB4PSI4IiB5PSI2IiB3aWR0aD0iMzIiIGhlaWdodD0iMzYiIHJ4PSI0IiBmaWxsPSIjMDA3OGQ0Ii8+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iMjQiIGhlaWdodD0iOCIgcng9IjIiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjI2IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjM0IiByPSIyLjUiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+      <span>Calculator</span>
+    </div>
+  </div>
+
+  <!-- calculator window -->
+  <div class="calculator" id="calc">
+    <div class="calc-title">
+      <span>Calculator</span>
+      <button class="close-btn" onclick="closeCalc()">✕</button>
+    </div>
+    <div class="calc-screen" id="screen">0</div>
+    <div class="calc-buttons">
+      <button onclick="clearScreen()">C</button>
+      <button onclick="backspace()">⌫</button>
+      <button onclick="press('/')">/</button>
+      <button onclick="press('*')">⌫</button>
+
+      <button onclick="press('7')">7</button>
+      <button onclick="press('8')">8</button>
+      <button onclick="press('9')">9</button>
+      <button onclick="press('-')">−</button>
+
+      <button onclick="press('4')">4</button>
+      <button onclick="press('5')">5</button>
+      <button onclick="press('6')">6</button>
+      <button onclick="press('+')">+</button>
+
+      <button onclick="press('1')">1</button>
+      <button onclick="press('2')">2</button>
+      <button onclick="press('3')">3</button>
+      <button class="blue" onclick="calculate()" style="grid-row: span 2;">=</button>
+
+      <button onclick="press('0')" style="grid-column: span 2;">0</button>
+      <button onclick="press('.')">.</button>
+    </div>
+  </div>
+
+  <!-- taskbar -->
+  <div class="taskbar">
+    <button onclick="openCalc()">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iOSIgaGVpZ2h0PSI5IiBmaWxsPSIjZmZmIi8+PHJlY3QgeD0iMTMiIHk9IjIiIHdpZHRoPSI5IiBoZWlnaHQ9IjkiIGZpbGw9IiNmZmYiLz48cmVjdCB4PSIyIiB5PSIxMyIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iI2ZmZiIvPjxyZWN0IHg9IjEzIiB5PSIxMyIgd2lkdGg9IjkiIGhlaWdodD0iOSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==">
+    </button>
+    <button onclick="openCalc()">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cmVjdCB4PSI0IiB5PSIyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjAiIHJ4PSIyIiBmaWxsPSIjMDA3OGQ0Ii8+PHJlY3QgeD0iNiIgeT0iNSIgd2lkdGg9IjEyIiBoZWlnaHQ9IjQiIHJ4PSIxIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iOCIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjEyIiByPSIxLjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI4IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjE2IiBjeT0iMTciIHI9IjEuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==">
+    </button>
+  </div>
+
+  <!-- clock -->
+  <div class="clock" id="clock">--:--</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
