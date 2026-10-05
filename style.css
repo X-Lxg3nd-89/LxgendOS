@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Korataki';
+  src: url('fonts/korataki_extrabold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+}
+
 * {
   margin: 0;
   padding: 0;
