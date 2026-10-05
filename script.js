@@ -368,7 +368,6 @@ document.addEventListener('contextmenu', function (e) {
 });
 
 
-/* FILE SYSTEM */
 var fileSystem = {
   '/home/user': {
     type: 'folder',
@@ -378,7 +377,7 @@ var fileSystem = {
         children: {
           'readme.txt': {
             type: 'file',
-            content: 'LxgendOS — a web based desktop.\nBuilt by user.\n\nType "help" anywhere for a surprise.'
+            content: 'LxgendOS — a web based desktop.\nBuilt by Lxg3nd.\n\nType "help" anywhere for a surprise.'
           },
           'todo.txt': {
             type: 'file',
@@ -400,7 +399,7 @@ var fileSystem = {
             children: {
               'notes.txt': {
                 type: 'file',
-                content: 'LxgendOS project notes:\n- Windows 11 style\n- Dark red accents\n- Inter font everywhere'
+                content: 'LxgendOS project notes:\n- Nothing...'
               }
             }
           }
@@ -419,7 +418,7 @@ var fileSystem = {
     children: {
       'easter_egg.txt': {
         type: 'file',
-        content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing.\n\nBut you smiled, right?'
+        content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing. \n\nJK comment it if you found this!'
       }
     }
   }
