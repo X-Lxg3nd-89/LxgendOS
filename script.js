@@ -992,7 +992,6 @@ function renderStore() {
   });
 }
 
-// ---- startup (must be at the very bottom) ----
 updateBootTime();
 updateClock();
 renderDesktopIcons();
