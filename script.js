@@ -1,138 +1,131 @@
-function updateBootTime() {
-  var now = new Date();
-  var hrs = now.getHours();
-  var mins = now.getMinutes();
-  if (hrs < 10) hrs = '0' + hrs;
-  if (mins < 10) mins = '0' + mins;
-  document.getElementById('boot-time').innerText = hrs + ':' + mins;
 
-  var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  document.getElementById('boot-date').innerText = dayNames[now.getDay()] + ', ' + monthNames[now.getMonth()] + ' ' + now.getDate();
+function bootClockTick() {
+  var rightNow = new Date();
+  var hr = rightNow.getHours();
+  var mn = rightNow.getMinutes();
+  if (hr < 10) hr = '0' + hr;
+  if (mn < 10) mn = '0' + mn;
+  document.getElementById('boot-time').innerText = hr + ':' + mn;
+
+  var dayRoll = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var monthRoll = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('boot-date').innerText = dayRoll[rightNow.getDay()] + ', ' + monthRoll[rightNow.getMonth()] + ' ' + rightNow.getDate();
 }
-updateBootTime();
+bootClockTick();
 
-function dismissBoot() {
+function skipTheBoot() {
   document.getElementById('boot').classList.add('hidden');
 }
 
-function powerOff() {
-  closeQuickSettings();
-  closeStartMenu();
+function shutItDown() {
+  popQuickPanelClosed();
+  popStartMenuClosed();
   document.querySelectorAll('.window').forEach(function (w) {
     w.classList.remove('open');
   });
   document.getElementById('boot').classList.remove('hidden');
-  updateBootTime();
+  bootClockTick();
 }
 
+var beegNumber = "0";
+var stashedNumber = null;
+var mathSign = null;
+var startOver = false;
 
-/* calculator stuff */
-var cur = "0";
-var prevVal = null;
-var operator = null;
-var resetNext = false;
-
-function updateScreen() {
-  document.getElementById("screen").innerText = cur;
+function refreshNumber() {
+  document.getElementById("screen").innerText = beegNumber;
 }
 
-function press(val) {
-  if (resetNext) {
-    cur = val;
-    resetNext = false;
+function tapNumber(digit) {
+  if (startOver) {
+    beegNumber = digit;
+    startOver = false;
   } else {
-    if (val == "." && cur.includes(".")) return;
-
-    if (cur == "0" && val != ".") {
-      cur = val;
+    if (digit == "." && beegNumber.includes(".")) return;
+    if (beegNumber == "0" && digit != ".") {
+      beegNumber = digit;
     } else {
-      cur += val;
+      beegNumber += digit;
     }
   }
-  updateScreen();
+  refreshNumber();
 }
 
-function pressOp(o) {
-  if (operator != null && !resetNext) calculate();
-  prevVal = cur;
-  operator = o;
-  resetNext = true;
+function tapMathSign(sign) {
+  if (mathSign != null && !startOver) mathMagic();
+  stashedNumber = beegNumber;
+  mathSign = sign;
+  startOver = true;
 }
 
-function calculate() {
-  if (operator == null || prevVal == null) return;
+function mathMagic() {
+  if (mathSign == null || stashedNumber == null) return;
 
-  var a = parseFloat(prevVal), b = parseFloat(cur);
-  var res = 0;
+  var lefty = parseFloat(stashedNumber), righty = parseFloat(beegNumber);
+  var answer = 0;
 
-  switch (operator) {
-    case "+": res = a + b; break;
-    case "-": res = a - b; break;
-    case "*": res = a * b; break;
-    case "/":
-      if (b == 0) {
-        cur = "Error";
-        updateScreen();
-        prevVal = null; operator = null;
-        resetNext = true;
-        return;
-      }
-      res = a / b;
-      break;
+  if (mathSign == "+") answer = lefty + righty;
+  else if (mathSign == "-") answer = lefty - righty;
+  else if (mathSign == "*") answer = lefty * righty;
+  else if (mathSign == "/") {
+    if (righty == 0) {
+      beegNumber = "Error";
+      refreshNumber();
+      stashedNumber = null; mathSign = null;
+      startOver = true;
+      return;
+    }
+    answer = lefty / righty;
   }
 
-  // avoid 0.1 + 0.2 nonsense
-  res = Math.round(res * 100000000) / 100000000;
-  cur = String(res);
-  prevVal = null;
-  operator = null;
-  resetNext = true;
-  updateScreen();
+  answer = Math.round(answer * 100000000) / 100000000;
+  beegNumber = String(answer);
+  stashedNumber = null;
+  mathSign = null;
+  startOver = true;
+  refreshNumber();
 }
 
-function clearScreen() {
-  cur = "0"; prevVal = null; operator = null; resetNext = false;
-  updateScreen();
+function nukeIt() {
+  beegNumber = "0"; stashedNumber = null; mathSign = null; startOver = false;
+  refreshNumber();
 }
 
-function backspace() {
-  if (resetNext) {
-    cur = "0";
-    resetNext = false;
+function oopsDelete() {
+  if (startOver) {
+    beegNumber = "0";
+    startOver = false;
   }
   else {
-    cur = cur.slice(0, -1);
-    if (cur == "") cur = "0";
+    beegNumber = beegNumber.slice(0, -1);
+    if (beegNumber == "") beegNumber = "0";
   }
-  updateScreen();
+  refreshNumber();
 }
 
+var stackHeight = 10;
 
-var topZ = 10;
-
-function openWin(id) {
+function summonWindow(id) {
   var win = document.getElementById("win-" + id);
   win.classList.add("open");
-  win.style.zIndex = ++topZ;
+  win.style.zIndex = ++stackHeight;
 
-  if (id === 'fileexplorer') feRender();
+  if (id === 'fileexplorer') drawTheFiles();
 
-  closeStartMenu();
-  closeQuickSettings();
+  popStartMenuClosed();
+  popQuickPanelClosed();
 }
 
-function closeWin(id) {
+function poofWindow(id) {
   document.getElementById("win-" + id).classList.remove("open");
 }
 
-function minWin(id) { document.getElementById("win-" + id).classList.remove("open") }
+function hideAway(id) { document.getElementById("win-" + id).classList.remove("open") }
 
-function maxWin(id) {
+function bigifyWindow(id) {
   var el = document.getElementById("win-" + id);
 
   if (el.dataset.max == "1") {
-    // put it back
     el.style.width = "";
     el.style.height = "";
     el.style.left = "50%";
@@ -148,43 +141,56 @@ function maxWin(id) {
   }
 }
 
+var draggedWindow = null;
+var mouseDx = 0, mouseDy = 0;
 
-var dragging = null;
-var offX = 0, offY = 0;
-
-function startDrag(e, id) {
+function grabWindow(e, id) {
   if (e.target.classList.contains("dot")) return;
 
-  dragging = document.getElementById(id);
-  dragging.style.zIndex = ++topZ;
+  draggedWindow = document.getElementById(id);
+  draggedWindow.style.zIndex = ++stackHeight;
 
-  var box = dragging.getBoundingClientRect();
-  dragging.style.transform = "none";
-  dragging.style.left = box.left + "px";
-  dragging.style.top = box.top + "px";
+  var box = draggedWindow.getBoundingClientRect();
+  draggedWindow.style.transform = "none";
+  draggedWindow.style.left = box.left + "px";
+  draggedWindow.style.top = box.top + "px";
 
-  offX = e.clientX - box.left;
-  offY = e.clientY - box.top;
+  mouseDx = e.clientX - box.left;
+  mouseDy = e.clientY - box.top;
 
-  document.addEventListener("mousemove", doDrag);
-  document.addEventListener("mouseup", endDrag);
+  document.addEventListener("mousemove", yankWindow);
+  document.addEventListener("mouseup", dropWindow);
 }
 
-function doDrag(e) {
-  if (!dragging) return;
-  dragging.style.left = (e.clientX - offX) + "px";
-  dragging.style.top  = (e.clientY - offY) + "px";
+function yankWindow(e) {
+  if (!draggedWindow) return;
+  draggedWindow.style.left = (e.clientX - mouseDx) + "px";
+  draggedWindow.style.top  = (e.clientY - mouseDy) + "px";
 }
 
-function endDrag() {
-  dragging = null;
-  document.removeEventListener("mousemove", doDrag);
-  document.removeEventListener("mouseup", endDrag);
+function dropWindow() {
+  draggedWindow = null;
+  document.removeEventListener("mousemove", yankWindow);
+  document.removeEventListener("mouseup", dropWindow);
 }
 
+var whosSelected = null;
 
-/* THEME */
-function setBg(value, el) {
+function iconWackyClick(evt, me, appId) {
+  evt.stopPropagation();
+
+  if (me.classList.contains('selected')) {
+    me.classList.remove('selected');
+    whosSelected = null;
+    summonWindow(appId);
+  } else {
+    if (whosSelected && whosSelected !== me) whosSelected.classList.remove('selected');
+    me.classList.add('selected');
+    whosSelected = me;
+  }
+}
+
+function paintTheWall(value, el) {
   const layer = document.getElementById('bg-layer');
 
   if (value.charAt(0) == "#") {
@@ -200,7 +206,7 @@ function setBg(value, el) {
   if (el) el.classList.add("selected");
 }
 
-function importBg(e) {
+function grabImageFromDisk(e) {
   var f = e.target.files[0];
   if (!f) return;
 
@@ -210,15 +216,15 @@ function importBg(e) {
     var thumb = document.createElement('div');
     thumb.className = 'bg-thumb';
     thumb.style.backgroundImage = 'url(' + url + ')';
-    thumb.onclick = function () { setBg(url, thumb); };
+    thumb.onclick = function () { paintTheWall(url, thumb); };
 
     document.getElementById('theme-grid').appendChild(thumb);
-    setBg(url, thumb);
+    paintTheWall(url, thumb);
   };
   rd.readAsDataURL(f);
 }
 
-function setAccent(color, hover, el) {
+function recolorEverything(color, hover, el) {
   var root = document.documentElement;
   root.style.setProperty('--accent', color);
   root.style.setProperty('--accent-hover', hover);
@@ -227,13 +233,11 @@ function setAccent(color, hover, el) {
   if (el) el.classList.add('selected');
 }
 
-function toggleMode() {
+function flipLightSwitch() {
   document.body.classList.toggle('light');
 }
 
-
-// taskbar clock
-function updateClock() {
+function tickTockTick() {
   var t = new Date();
   var hh = t.getHours(), min = t.getMinutes();
   if (hh < 10) hh = '0' + hh;
@@ -248,40 +252,37 @@ function updateClock() {
   document.getElementById('tray-time').innerText = hh + ':' + min;
   document.getElementById('tray-date').innerText = day + '/' + mon + '/' + year;
 }
-updateClock();
-setInterval(updateClock, 1000);
+tickTockTick();
+setInterval(tickTockTick, 1000);
 
-
-/* quick settings */
-function toggleQuickSettings(e) {
+function popQuickPanel(e) {
   if (e) e.stopPropagation();
   document.getElementById('quick-settings').classList.toggle('open');
-  closeStartMenu();
+  popStartMenuClosed();
 }
 
-function closeQuickSettings() {
+function popQuickPanelClosed() {
   document.getElementById('quick-settings').classList.remove('open');
 }
 
-function toggleTile(el) { el.classList.toggle('active'); }
+function clickyToggle(el) { el.classList.toggle('active'); }
 
-function setBrightness(v) {
+function dimTheLights(v) {
   var overlay = document.getElementById('dim-overlay');
   var amt = (100 - v) / 100 * 0.85;
   overlay.style.opacity = amt;
 }
 
-function setVolume(v) {
-  // nothing
+function louderOrQuieter(v) {
+  // no audio yet
 }
 
-
-/* START MENU */
-var apps = [
+var appCrew = [
   { id: 'calc',         name: 'Calculator' },
   { id: 'notepad',      name: 'Notepad' },
   { id: 'fileexplorer', name: 'Files' },
-  { id: 'theme',        name: 'Theme' }
+  { id: 'theme',        name: 'Theme' },
+  { id: 'imageviewer',  name: 'Image Viewer' }
 ];
 
 function appIcon(id) {
@@ -289,14 +290,15 @@ function appIcon(id) {
   if (id === 'notepad') return '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" fill="#fff" class="acc-stroke" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="#888" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="#888" stroke-width="1.5" stroke-linecap="round"/></svg>';
   if (id === 'fileexplorer') return '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>';
   if (id === 'theme') return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" fill="none" class="acc-stroke" stroke-width="2"/><path d="M12 4v8 8" class="acc-stroke" stroke-width="2"/></svg>';
+  if (id === 'imageviewer') return '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" class="acc"/><circle cx="9" cy="10" r="2" fill="#fff"/><path d="M3 18l5-5 4 4 4-4 5 5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>';
   return '';
 }
 
-function renderStartApps(filter) {
+function fillStartMenu(filter) {
   var box = document.getElementById('start-apps');
   box.innerHTML = '';
 
-  var matches = apps.filter(function (a) {
+  var matches = appCrew.filter(function (a) {
     return !filter || a.name.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
   });
 
@@ -309,22 +311,31 @@ function renderStartApps(filter) {
     var item = document.createElement('div');
     item.className = 'start-app';
     item.innerHTML = '<div class="sa-icon">' + appIcon(app.id) + '</div><div class="sa-label">' + app.name + '</div>';
-    item.onclick = function () { openWin(app.id); };
+
+    item.addEventListener('click', function (evt) {
+      evt.stopPropagation();
+      if (item.classList.contains('selected')) {
+        item.classList.remove('selected');
+        summonWindow(app.id);
+      } else {
+        document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); });
+        item.classList.add('selected');
+      }
+    });
+
     box.appendChild(item);
   });
 }
 
-function filterStartApps(v) { renderStartApps(v) }
-
-function toggleStartMenu(e) {
+function popStartMenu(e) {
   if (e) e.stopPropagation();
 
   var menu = document.getElementById('start-menu');
   menu.classList.toggle('open');
-  closeQuickSettings();
+  popQuickPanelClosed();
 
   if (menu.classList.contains('open')) {
-    renderStartApps('');
+    fillStartMenu('');
     document.getElementById('start-search-input').value = '';
     setTimeout(function () {
       document.getElementById('start-search-input').focus();
@@ -332,12 +343,10 @@ function toggleStartMenu(e) {
   }
 }
 
-function closeStartMenu() {
+function popStartMenuClosed() {
   document.getElementById('start-menu').classList.remove('open');
 }
 
-
-// close stuff when you click somewhere else
 document.addEventListener('click', function (e) {
   var qs = document.getElementById('quick-settings');
   var tray = document.querySelector('.tray');
@@ -355,6 +364,15 @@ document.addEventListener('click', function (e) {
   if (ctxMenu.classList.contains('open') && !ctxMenu.contains(e.target)) {
     ctxMenu.classList.remove('open');
   }
+
+  if (!e.target.closest('.icon') && whosSelected) {
+    whosSelected.classList.remove('selected');
+    whosSelected = null;
+  }
+
+  if (!e.target.closest('.fe-item')) {
+    document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+  }
 });
 
 document.addEventListener('contextmenu', function (e) {
@@ -364,11 +382,10 @@ document.addEventListener('contextmenu', function (e) {
   var menu = document.getElementById('ctx-menu');
   menu.style.left = e.clientX + 'px';
   menu.style.top = e.clientY + 'px';
-  menu.classList.add('open');
+  menundefined.classList.add('open');
 });
 
-
-var fileSystem = {
+var folderKingdom = {
   '/home/user': {
     type: 'folder',
     children: {
@@ -377,17 +394,30 @@ var fileSystem = {
         children: {
           'readme.txt': {
             type: 'file',
-            content: 'LxgendOS — a web based desktop.\nBuilt by Lxg3nd.\n\nType "help" anywhere for a surprise.'
+            content: 'LxgendOS — a web based desktop.
+Built by Lxg3nd.
+
+Type "help" anywhere for a surprise.'
           },
           'todo.txt': {
             type: 'file',
-            content: '1. Build LxgendOS\n2. Add more apps\n3. Ship it'
+            content: '1. Build LxgendOS
+2. Add more apps
+3. Ship it'
           }
-        }
-      },
+          }
+          },
       'Pictures': {
         type: 'folder',
         children: {
+          'images': {
+            type: 'folder',
+            children: {
+              'im1.png': { type: 'image', src: 'images/im1.png' },
+              'im2.png': { type: 'image', src: 'images/im2.png' },
+              'im3.png': { type: 'image', src: 'images/im3.png' }
+            }
+          },
           'wallpapers': { type: 'folder', children: {} }
         }
       },
@@ -399,18 +429,23 @@ var fileSystem = {
             children: {
               'notes.txt': {
                 type: 'file',
-                content: 'LxgendOS project notes:\n- Nothing...'
+                content: 'LxgendOS project notes:
+- Nothing...'
+              }
               }
             }
           }
-        }
-      },
+        },
       'welcome.txt': {
         type: 'file',
-        content: 'Welcome to LxgendOS!\n\nThis is your first file. Open it, edit it, save it.\n\nTry browsing into the folders.'
+        content: 'Welcome to LxgendOS!
+
+This is your first file. Open it, edit it, save it.
+
+Try browsing into the folders. There are some pictures in Pictures/images.'
       }
-    }
-  },
+      }
+      },
 
   '/home/user/.hidden': {
     type: 'folder',
@@ -418,23 +453,28 @@ var fileSystem = {
     children: {
       'easter_egg.txt': {
         type: 'file',
-        content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing. \n\nJK comment it if you found this!'
+        content: 'You found the hidden folder.
+
+Congratulations.Add
+Here is your reward: nothing. 
+
+JK comment it if you found this!'
+      }
       }
     }
-  }
-};
+  };
 
-var cwd = '/home/user';
-var navStack = [];
-var searchQ = '';
-var showHidden = false;
+var whereAmI = '/home/user';
+var backTrail = [];
+var whatchaLookingFor = '';
+var peekabooMode = false;
 
-function feGetNode(path) {
-  if (path === '/home/user') return fileSystem['/home/user'];
-  if (path === '/home/user/.hidden') return fileSystem['/home/user/.hidden'];
+function findThatFolder(path) {
+  if (path === '/home/user') return folderKingdom['/home/user'];
+  if (path === '/home/user/.hidden') return folderKingdom['/home/user/.hidden'];
 
   var bits = path.replace('/home/user', '').split('/').filter(Boolean);
-  var n = fileSystem['/home/user'];
+  var n = folderKingdom['/home/user'];
 
   for (var i = 0; i < bits.length; i++) {
     if (n.children && n.children[bits[i]]) n = n.children[bits[i]];
@@ -443,10 +483,38 @@ function feGetNode(path) {
   return n;
 }
 
-function feRender() {
+function makeAnIconFile() {
+  return '<svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#fff" class="acc-stroke" stroke-width="1.5"/></svg>';
+}
+
+function makeAnIconFolder() {
+  return '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>';
+}
+
+function makeAnIconImage() {
+  return '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" class="acc"/><circle cx="9" cy="10" r="2" fill="#fff"/><path d="M3 18l5-5 4 4 4-4 5 5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>';
+}
+
+function openThisThing(child, name) {
+  if (child.type === 'folder') {
+    backTrail.push(whereAmI);
+    whereAmI = whereAmI + '/' + name;
+    whatchaLookingFor = '';
+    document.getElementById('fe-search').value = '';
+    drawTheFiles();
+  }
+  else if (child.type === 'image') {
+    showThePicture(child.src);
+  }
+  else {
+    openInNotepadThing(name, child.content);
+  }
+}
+
+function drawTheFiles() {
   var listEl = document.getElementById('fe-list');
-  var here = feGetNode(cwd);
-  document.getElementById('fe-path').innerText = cwd;
+  var here = findThatFolder(whereAmI);
+  document.getElementById('fe-path').innerText = whereAmI;
   listEl.innerHTML = '';
 
   if (!here || here.type !== 'folder') {
@@ -457,25 +525,25 @@ function feRender() {
   var kids = here.children || {};
   var names = Object.keys(kids);
 
-  if (searchQ && cwd === '/home/user') {
+  if (whatchaLookingFor && whereAmI === '/home/user') {
     var hits = [];
 
-    function walk(node, path) {
+    function goDeeper(node, path) {
       if (node.children) {
         Object.keys(node.children).forEach(function (nm) {
           var c = node.children[nm];
           var cPath = path + '/' + nm;
-          if (nm.toLowerCase().indexOf(searchQ.toLowerCase()) !== -1) {
+          if (nm.toLowerCase().indexOf(whatchaLookingFor.toLowerCase()) !== -1) {
             hits.push({ name: nm, path: cPath, node: c });
           }
-          if (c.type === 'folder') walk(c, cPath);
+          if (c.type === 'folder') goDeeper(c, cPath);
         });
       }
     }
 
-    walk(here, '/home/user');
-    if (showHidden && fileSystem['/home/user/.hidden']) {
-      walk(fileSystem['/home/user/.hidden'], '/home/user/.hidden');
+    goDeeper(here, '/home/user');
+    if (peekabooMode && folderKingdom['/home/user/.hidden']) {
+      goDeeper(folderKingdom['/home/user/.hidden'], '/home/user/.hidden');
     }
 
     if (hits.length === 0) {
@@ -488,20 +556,18 @@ function feRender() {
       row.className = 'fe-item';
 
       var ico = r.node.type === 'folder'
-        ? '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#fff" class="acc-stroke" stroke-width="1.5"/></svg>';
+        ? makeAnIconFolder()
+        : (r.node.type === 'image' ? makeAnIconImage() : makeAnIconFile());
 
       row.innerHTML = '<div class="fe-icon">' + ico + '</div><span>' + r.path + '</span>';
-      row.onclick = function () {
-        if (r.node.type === 'folder') {
-          navStack.push(cwd);
-          cwd = r.path;
-          searchQ = '';
-          document.getElementById('fe-search').value = '';
-          feRender();
-        }
-        else {
-          openNotepadFile(r.name, r.node.content);
+      row.onclick = function (evt) {
+        evt.stopPropagation();
+        if (row.classList.contains('selected')) {
+          row.classList.remove('selected');
+          openThisThing(r.node, r.name);
+        } else {
+          document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+          row.classList.add('selected');
         }
       };
       listEl.appendChild(row);
@@ -512,41 +578,46 @@ function feRender() {
   var count = 0;
   names.forEach(function (name) {
     var child = kids[name];
-    if (searchQ && name.toLowerCase().indexOf(searchQ.toLowerCase()) === -1) return;
+    if (whatchaLookingFor && name.toLowerCase().indexOf(whatchaLookingFor.toLowerCase()) === -1) return;
     count++;
 
     var div = document.createElement('div');
     div.className = 'fe-item';
 
     var icon = child.type === 'folder'
-      ? '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#fff" class="acc-stroke" stroke-width="1.5"/></svg>';
+      ? makeAnIconFolder()
+      : (child.type === 'image' ? makeAnIconImage() : makeAnIconFile());
 
     div.innerHTML = '<div class="fe-icon">' + icon + '</div><span>' + name + '</span>';
-    div.onclick = function () {
-      if (child.type === 'folder') {
-        navStack.push(cwd);
-        cwd = cwd + '/' + name;
-        searchQ = '';
-        document.getElementById('fe-search').value = '';
-        feRender();
-      } else {
-        openNotepadFile(name, child.content);
+    div.onclick = function (evt) {
+      evt.stopPropagation();
+      if (div.classList.contains('selected')) {
+        div.classList.remove('selected');
+        openThisThing(child, name);
+      } else {        document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+        div.classList.add('selected');
       }
     };
     listEl.appendChild(div);
   });
 
-  if (cwd === '/home/user' && showHidden) {
-    var hid = fileSystem['/home/user/.hidden'];
+  if (whereAmI === '/home/user' && peekabooMode) {
+    var hid = folderKingdom['/home/user/.hidden'];
     if (hid) {
       var div = document.createElement('div');
       div.className = 'fe-item';
       div.innerHTML = '<div class="fe-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc" opacity="0.5"/></svg></div><span style="opacity:0.6">.hidden</span>';
-      div.onclick = function () {
-        navStack.push(cwd);
-        cwd = '/home/user/.hidden';
-        feRender();
+      div.onclick = function (evt) {
+        evt.stopPropagation();
+        if (div.classList.contains('selected')) {
+          div.classList.remove('selected');
+          backTrail.push(whereAmI);
+          whereAmI = '/home/user/.hidden';
+          drawTheFiles();
+        } else {
+          document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+          div.classList.add('selected');
+        }
       };
       listEl.appendChild(div);
       count++;
@@ -556,49 +627,48 @@ function feRender() {
   if (count === 0) listEl.innerHTML = '<div class="fe-empty">No items found</div>';
 }
 
-function feGoBack() {
-  if (navStack.length > 0) {
-    cwd = navStack.pop();
-    searchQ = '';
+function goBackInTime() {
+  if (backTrail.length > 0) {
+    whereAmI = backTrail.pop();
+    whatchaLookingFor = '';
     document.getElementById('fe-search').value = '';
-    feRender();
+    drawTheFiles();
   }
 }
 
-function feGoHome() {
-  cwd = '/home/user';
-  navStack = [];
-  searchQ = '';
+function beamMeHome() {
+  whereAmI = '/home/user';
+  backTrail = [];
+  whatchaLookingFor = '';
   document.getElementById('fe-search').value = '';
-  feRender();
+  drawTheFiles();
 }
 
-function feSearch(term) {
-  searchQ = term;
-  feRender();
+function huntForFiles(term) {
+  whatchaLookingFor = term;
+  drawTheFiles();
 }
 
+var currentlyOpened = null;
 
-var curFile = null;
-
-function openNotepadFile(name, content) {
+function openInNotepadThing(name, content) {
   document.getElementById('notepad-text').value = content || '';
   document.getElementById('notepad-title').innerText = 'Notepad - ' + name;
 
-  var parent = findFileFolder(fileSystem['/home/user'], name, '/home/user');
-  curFile = parent ? { name: name, folder: parent } : null;
+  var parent = whereDoYouLive(folderKingdom['/home/user'], name, '/home/user');
+  currentlyOpened = parent ? { name: name, folder: parent } : null;
 
-  openWin('notepad');
+  summonWindow('notepad');
 }
 
-function findFileFolder(node, name, path) {
+function whereDoYouLive(node, name, path) {
   if (!node.children) return null;
   if (node.children[name] && node.children[name].type === 'file') return path;
 
   for (var k in node.children) {
     var child = node.children[k];
     if (child.type === 'folder') {
-      var found = findFileFolder(child, name, path + '/' + k);
+      var found = whereDoYouLive(child, name, path + '/' + k);
       if (found) return found;
     }
   }
@@ -607,76 +677,4 @@ function findFileFolder(node, name, path) {
 
 document.addEventListener('keydown', function (e) {
   if (e.ctrlKey && e.key.toLowerCase() === 'h') {
-    var fe = document.getElementById('win-fileexplorer');
-    if (fe.classList.contains('open')) {
-      e.preventDefault();
-      showHidden = !showHidden;
-      feRender();
-    }
-  }
-});
-
-
-function saveNotepad() {
-  if (curFile) {
-    var n = feGetNode(curFile.folder);
-    if (n && n.children && n.children[curFile.name]) {
-      n.children[curFile.name].content = document.getElementById('notepad-text').value;
-      return;
-    }
-  }
-  openSaveDialog();
-}
-
-function openSaveDialog() {
-  var sel = document.getElementById('save-folder');
-  sel.innerHTML = '';
-
-  function walk(n, path) {
-    if (n.type === 'folder') {
-      var opt = document.createElement('option');
-      opt.value = path;
-      opt.innerText = path;
-      sel.appendChild(opt);
-
-      if (n.children) {
-        Object.keys(n.children).forEach(function (k) {
-          if (n.children[k].type === 'folder') walk(n.children[k], path + '/' + k);
-        });
-      }
-    }
-  }
-  walk(fileSystem['/home/user'], '/home/user');
-
-  document.getElementById('save-name').value = '';
-  document.getElementById('save-dialog').classList.add('open');
-}
-
-function closeSaveDialog() {
-  document.getElementById('save-dialog').classList.remove('open');
-}
-
-function confirmSave() {
-  var fname = document.getElementById('save-name').value.trim();
-  if (!fname) { alert('Please enter a file name'); return; }
-  if (!fname.endsWith('.txt')) fname += '.txt';
-
-  var folderPath = document.getElementById('save-folder').value;
-  var target = feGetNode(folderPath);
-
-  if (!target || target.type !== 'folder') { alert('Cannot save here'); return; }
-  if (!target.children) target.children = {};
-
-  target.children[fname] = {
-    type: 'file',
-    content: document.getElementById('notepad-text').value
-  };
-
-  curFile = { name: fname, folder: folderPath };
-  document.getElementById('notepad-title').innerText = 'Notepad - ' + fname;
-  closeSaveDialog();
-
-  if (document.getElementById('win-fileexplorer').classList.contains('open')) feRender();
-}
-
-renderStartApps('');
+    var fe
