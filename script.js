@@ -94,8 +94,7 @@ function oopsDelete() {
   if (startOver) {
     beegNumber = "0";
     startOver = false;
-  }
-  else {
+  } else {
     beegNumber = beegNumber.slice(0, -1);
     if (beegNumber == "") beegNumber = "0";
   }
@@ -110,6 +109,8 @@ function summonWindow(id) {
   win.style.zIndex = ++stackHeight;
 
   if (id === 'fileexplorer') drawTheFiles();
+  if (id === 'store') stockTheShelves();
+  if (id === 'shell') bootShellInput();
 
   popStartMenuClosed();
   popQuickPanelClosed();
@@ -131,8 +132,7 @@ function bigifyWindow(id) {
     el.style.top = "50%";
     el.style.transform = "translate(-50%, -50%)";
     el.dataset.max = "0";
-  }
-  else {
+  } else {
     el.style.width = "90vw";   el.style.height = "80vh";
     el.style.left = "5vw";     el.style.top = "10vh";
     el.style.transform = "none";
@@ -280,6 +280,10 @@ var appCrew = [
   { id: 'calc',         name: 'Calculator' },
   { id: 'notepad',      name: 'Notepad' },
   { id: 'fileexplorer', name: 'Files' },
+  { id: 'shell',        name: 'Shell' },
+  { id: 'store',        name: 'Store' },
+  { id: 'clock',        name: 'Clock' },
+  { id: 'paint',        name: 'Paint' },
   { id: 'theme',        name: 'Theme' },
   { id: 'imageviewer',  name: 'Image Viewer' }
 ];
@@ -288,6 +292,10 @@ function appIcon(id) {
   if (id === 'calc') return '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="2" width="16" height="20" rx="2" class="acc"/><rect x="6" y="5" width="12" height="4" rx="1" fill="#fff"/></svg>';
   if (id === 'notepad') return '<svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" fill="#fff" class="acc-stroke" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="#888" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="#888" stroke-width="1.5" stroke-linecap="round"/></svg>';
   if (id === 'fileexplorer') return '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>';
+  if (id === 'shell') return '<svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" class="acc"/><path d="M6 10l3 2-3 2M12 14h6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>';
+  if (id === 'store') return '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8h16l-2 12H6L4 8z" class="acc"/><path d="M8 8V6a4 4 0 018 0v2" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
+  if (id === 'clock') return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" class="acc-stroke" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+  if (id === 'paint') return '<svg viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 000 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2c2.8 0 5-2.2 5-5 0-4.9-4.5-8.5-10-8.5z" class="acc"/></svg>';
   if (id === 'theme') return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" fill="none" class="acc-stroke" stroke-width="2"/><path d="M12 4v8 8" class="acc-stroke" stroke-width="2"/></svg>';
   if (id === 'imageviewer') return '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" class="acc"/><circle cx="9" cy="10" r="2" fill="#fff"/><path d="M3 18l5-5 4 4 4-4 5 5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>';
   return '';
@@ -757,4 +765,364 @@ function resetTheZoom() {
   document.getElementById('iv-zoom-label').innerText = '100%';
 }
 
+/* ============ SHELL ============ */
+var shellInputEl = null;
+
+function bootShellInput() {
+  shellInputEl = document.getElementById('shell-input');
+  if (!shellInputEl) return;
+  if (shellInputEl.dataset.wired === 'yes') {
+    setTimeout(function () { shellInputEl.focus(); }, 50);
+    return;
+  }
+  shellInputEl.dataset.wired = 'yes';
+  shellInputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var cmd = this.value.trim();
+      if (cmd) runShellCommand(cmd);
+      this.value = '';
+    }
+  });
+  setTimeout(function () { shellInputEl.focus(); }, 50);
+}
+
+function writeToShell(text) {
+  var body = document.getElementById('shell-body');
+  var line = document.getElementById('shell-input-line');
+  var div = document.createElement('div');
+  div.textContent = text;
+  body.insertBefore(div, line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function escapeMyHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function runShellCommand(cmd) {
+  var body = document.getElementById('shell-body');
+  var line = document.getElementById('shell-input-line');
+
+  var prompt = document.createElement('div');
+  prompt.className = 'shell-line';
+  prompt.innerHTML = '<span class="shell-prompt">lxg&gt;</span><span>' + escapeMyHtml(cmd) + '</span>';
+  body.insertBefore(prompt, line);
+
+  var parts = cmd.split(' ');
+  var c = parts[0].toLowerCase();
+  var args = parts.slice(1);
+
+  if (c === 'help') {
+    writeToShell('Available commands:');
+    writeToShell('  help          — this list');
+    writeToShell('  ver           — version info');
+    writeToShell('  whoami        — show current user');
+    writeToShell('  pwd           — print working dir');
+    writeToShell('  ls [path]     — list files in current/path');
+    writeToShell('  cat <file>    — print a text file');
+    writeToShell('  open <app>    — open app (calc, notepad, shell, etc.)');
+    writeToShell('  apps          — list all apps');
+    writeToShell('  color <hex>   — change accent colour');
+    writeToShell('  theme         — open theme app');
+    writeToShell('  echo <text>   — repeat text');
+    writeToShell('  date          — show today');
+    writeToShell('  time          — show now');
+    writeToShell('  clear         — clear screen');
+    writeToShell('  boot          — return to boot screen');
+  } else if (c === 'ver') {
+    writeToShell('LxgendOS Shell v1.0');
+    writeToShell('Build: lxg-2025');
+  } else if (c === 'whoami') {
+    writeToShell('user');
+  } else if (c === 'pwd') {
+    writeToShell(whereAmI);
+  } else if (c === 'ls') {
+    var path = args[0] || whereAmI;
+    if (path.charAt(0) !== '/') {
+      path = whereAmI === '/home/user' ? '/home/user/' + path : whereAmI + '/' + path;
+    }
+    var node = findThatFolder(path);
+    if (!node || node.type !== 'folder') { writeToShell('ls: no such folder'); return; }
+    var keys = Object.keys(node.children || {});
+    if (keys.length === 0) writeToShell('(empty)');
+    else keys.forEach(function (k) {
+      var child = node.children[k];
+      writeToShell((child.type === 'folder' ? '[dir]  ' : '       ') + k);
+    });
+  } else if (c === 'cat') {
+    if (!args[0]) { writeToShell('cat: missing file name'); return; }
+    var node = findThatFolder(whereAmI + '/' + args[0]);
+    if (!node || node.type !== 'file') { writeToShell('cat: file not found'); return; }
+    writeToShell(node.content);
+  } else if (c === 'open') {
+    if (!args[0]) { writeToShell('open: which app?'); return; }
+    var appId = args[0].toLowerCase();
+    var aliases = { 'calculator': 'calc', 'files': 'fileexplorer', 'file': 'fileexplorer', 'terminal': 'shell', 'image': 'imageviewer' };
+    if (aliases[appId]) appId = aliases[appId];
+    var found = null;
+    for (var i = 0; i < appCrew.length; i++) if (appCrew[i].id === appId) found = appCrew[i];
+    if (found) { summonWindow(appId); writeToShell('Opened ' + found.name); }
+    else writeToShell('open: unknown app "' + appId + '"');
+  } else if (c === 'apps') {
+    appCrew.forEach(function (a) { writeToShell('  ' + a.id.padEnd(14) + a.name); });
+  } else if (c === 'color') {
+    if (!args[0] || args[0].charAt(0) !== '#') { writeToShell('color: give a hex like #00ff00'); return; }
+    recolorEverything(args[0], args[0], null);
+    writeToShell('Accent set to ' + args[0]);
+  } else if (c === 'theme') {
+    summonWindow('theme');
+    writeToShell('Opened Theme app');
+  } else if (c === 'echo') {
+    writeToShell(args.join(' '));
+  } else if (c === 'date') {
+    writeToShell(new Date().toDateString());
+  } else if (c === 'time') {
+    writeToShell(new Date().toLocaleTimeString());
+  } else if (c === 'clear') {
+    body.querySelectorAll('div').forEach(function (d) {
+      if (d.id !== 'shell-input-line') d.remove();
+    });
+    return;
+  } else if (c === 'boot') {
+    shutItDown();
+    return;
+  } else {
+    writeToShell('lxg: unknown command "' + c + '". Try "help".');
+  }
+}
+
+/* ============ STORE ============ */
+var storeShelf = [
+  { id: 'tictactoe', name: 'Tic Tac Toe', desc: 'Classic 3x3 game', icon: '⭕' },
+  { id: 'chess', name: 'Chess', desc: 'Local 2-player chess', icon: '♞' },
+  { id: 'web', name: 'Web Browser', desc: 'Coming soon', icon: '🌐', disabled: true },
+  { id: 'music', name: 'Music Player', desc: 'Coming soon', icon: '🎵', disabled: true },
+  { id: 'mail', name: 'Mail', desc: 'Coming soon', icon: '✉️', disabled: true },
+  { id: 'code', name: 'Code Editor', desc: 'Coming soon', icon: '💻', disabled: true }
+];
+
+function stockTheShelves() {
+  var grid = document.getElementById('store-grid');
+  grid.innerHTML = '';
+  storeShelf.forEach(function (app) {
+    var card = document.createElement('div');
+    card.className = 'store-card';
+    card.innerHTML =
+      '<div class="sc-icon">' + app.icon + '</div>' +
+      '<div class="sc-info">' +
+        '<div class="sc-name">' + app.name + '</div>' +
+        '<div class="sc-desc">' + app.desc + '</div>' +
+      '</div>';
+    var b = document.createElement('button');
+    b.className = 'sc-btn' + (app.disabled ? ' installed' : '');
+    b.innerText = app.disabled ? 'Coming soon' : 'Install';
+    card.appendChild(b);
+    grid.appendChild(card);
+  });
+}
+
+/* ============ CLOCK ============ */
+function switchClockTab(el, tab) {
+  document.querySelectorAll('.clock-tab').forEach(function (t) { t.classList.remove('active'); });
+  document.querySelectorAll('.clock-content').forEach(function (c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('clock-tab-' + tab).classList.add('active');
+}
+
+setInterval(function () {
+  var d = new Date();
+  var h = String(d.getHours()).padStart(2, '0');
+  var m = String(d.getMinutes()).padStart(2, '0');
+  var s = String(d.getSeconds()).padStart(2, '0');
+  var lc = document.getElementById('live-clock');
+  if (lc) lc.innerText = h + ':' + m + ':' + s;
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var ld = document.getElementById('live-date');
+  if (ld) ld.innerText = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+  var timeStr = h + ':' + m;
+  for (var i = 0; i < alarmSquad.length; i++) {
+    if (alarmSquad[i].time === timeStr && !alarmSquad[i].fired) {
+      alarmSquad[i].fired = true;
+      alert('Alarm! ' + alarmSquad[i].time);
+    }
+  }
+}, 1000);
+
+var timerTick = null;
+var timerLeftover = 0;
+
+function timerToggle() {
+  var btn = document.getElementById('timer-start');
+  if (timerTick) {
+    clearInterval(timerTick);
+    timerTick = null;
+    btn.innerText = 'Start';
+    return;
+  }
+  if (timerLeftover <= 0) {
+    var h = parseInt(document.getElementById('timer-h').value) || 0;
+    var m = parseInt(document.getElementById('timer-m').value) || 0;
+    var s = parseInt(document.getElementById('timer-s').value) || 0;
+    timerLeftover = h * 3600 + m * 60 + s;
+  }
+  if (timerLeftover <= 0) return;
+  btn.innerText = 'Pause';
+  timerTick = setInterval(function () {
+    timerLeftover--;
+    paintTimerDisplay();
+    if (timerLeftover <= 0) {
+      clearInterval(timerTick);
+      timerTick = null;
+      document.getElementById('timer-start').innerText = 'Start';
+      alert('Timer done!');
+    }
+  }, 1000);
+}
+
+function paintTimerDisplay() {
+  var h = Math.floor(timerLeftover / 3600);
+  var m = Math.floor((timerLeftover % 3600) / 60);
+  var s = timerLeftover % 60;
+  document.getElementById('timer-display').innerText =
+    String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function timerReset() {
+  if (timerTick) { clearInterval(timerTick); timerTick = null; }
+  timerLeftover = 0;
+  document.getElementById('timer-start').innerText = 'Start';
+  paintTimerDisplay();
+}
+
+var swTick = null;
+var swCount = 0;
+
+function swToggle() {
+  var btn = document.getElementById('sw-start');
+  if (swTick) {
+    clearInterval(swTick);
+    swTick = null;
+    btn.innerText = 'Start';
+    return;
+  }
+  btn.innerText = 'Pause';
+  swTick = setInterval(function () {
+    swCount++;
+    paintSwDisplay();
+  }, 1000);
+}
+
+function paintSwDisplay() {
+  var h = Math.floor(swCount / 3600);
+  var m = Math.floor((swCount % 3600) / 60);
+  var s = swCount % 60;
+  document.getElementById('stopwatch-display').innerText =
+    String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function swReset() {
+  if (swTick) { clearInterval(swTick); swTick = null; }
+  swCount = 0;
+  document.getElementById('sw-start').innerText = 'Start';
+  paintSwDisplay();
+}
+
+var alarmSquad = [];
+
+function addAlarm() {
+  var t = document.getElementById('alarm-time').value;
+  if (!t) return;
+  alarmSquad.push({ time: t, fired: false });
+  paintAlarms();
+}
+
+function removeAlarm(i) {
+  alarmSquad.splice(i, 1);
+  paintAlarms();
+}
+
+function paintAlarms() {
+  var list = document.getElementById('alarm-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (alarmSquad.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:20px 0">No alarms set</div>';
+    return;
+  }
+  alarmSquad.forEach(function (a, i) {
+    var div = document.createElement('div');
+    div.className = 'alarm-item';
+    div.innerHTML = '<span>' + a.time + '</span>';
+    var btn = document.createElement('button');
+    btn.innerText = '✕';
+    btn.onclick = function () { removeAlarm(i); };
+    div.appendChild(btn);
+    list.appendChild(div);
+  });
+}
+
+/* ============ PAINT ============ */
+var paintBrush = null;
+var paintIsDrawing = false;
+var paintWhichTool = 'brush';
+
+function bootPaint() {
+  var canvas = document.getElementById('paint-canvas');
+  if (!canvas) return;
+  paintBrush = canvas.getContext('2d');
+  paintBrush.fillStyle = '#ffffff';
+  paintBrush.fillRect(0, 0, canvas.width, canvas.height);
+  paintBrush.lineCap = 'round';
+  paintBrush.lineJoin = 'round';
+
+  canvas.addEventListener('mousedown', function (e) {
+    paintIsDrawing = true;
+    paintBrush.beginPath();
+    var rect = canvas.getBoundingClientRect();
+    paintBrush.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  canvas.addEventListener('mousemove', function (e) {
+    if (!paintIsDrawing) return;
+    var rect = canvas.getBoundingClientRect();
+    var size = parseInt(document.getElementById('paint-size').value);
+    paintBrush.lineWidth = size;
+    if (paintWhichTool === 'eraser') paintBrush.strokeStyle = '#ffffff';
+    else paintBrush.strokeStyle = document.getElementById('paint-color').value;
+    paintBrush.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    paintBrush.stroke();
+  });
+
+  document.addEventListener('mouseup', function () { paintIsDrawing = false; });
+}
+
+function paintTool(t) {
+  paintWhichTool = t;
+  document.getElementById('paint-brush').classList.toggle('active', t === 'brush');
+  document.getElementById('paint-eraser').classList.toggle('active', t === 'eraser');
+}
+
+function paintClear() {
+  var canvas = document.getElementById('paint-canvas');
+  paintBrush.fillStyle = '#ffffff';
+  paintBrush.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function paintSave() {
+  var canvas = document.getElementById('paint-canvas');
+  var url = canvas.toDataURL('image/png');
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'lxgend-paint.png';
+  a.click();
+}
+
+/* ============ INIT ============ */
 fillStartMenu('');
+bootPaint();
+paintAlarms();
