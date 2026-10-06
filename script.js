@@ -1,4 +1,3 @@
-
 function bootClockTick() {
   var rightNow = new Date();
   var hr = rightNow.getHours();
@@ -382,7 +381,7 @@ document.addEventListener('contextmenu', function (e) {
   var menu = document.getElementById('ctx-menu');
   menu.style.left = e.clientX + 'px';
   menu.style.top = e.clientY + 'px';
-  menundefined.classList.add('open');
+  menu.classList.add('open');
 });
 
 var folderKingdom = {
@@ -394,19 +393,14 @@ var folderKingdom = {
         children: {
           'readme.txt': {
             type: 'file',
-            content: 'LxgendOS — a web based desktop.
-Built by Lxg3nd.
-
-Type "help" anywhere for a surprise.'
+            content: 'LxgendOS — a web based desktop.\nBuilt by Lxg3nd.\n\nType "help" anywhere for a surprise.'
           },
           'todo.txt': {
             type: 'file',
-            content: '1. Build LxgendOS
-2. Add more apps
-3. Ship it'
+            content: '1. Build LxgendOS\n2. Add more apps\n3. Ship it'
           }
-          }
-          },
+        }
+      },
       'Pictures': {
         type: 'folder',
         children: {
@@ -429,23 +423,18 @@ Type "help" anywhere for a surprise.'
             children: {
               'notes.txt': {
                 type: 'file',
-                content: 'LxgendOS project notes:
-- Nothing...'
-              }
+                content: 'LxgendOS project notes:\n- Nothing...'
               }
             }
           }
-        },
+        }
+      },
       'welcome.txt': {
         type: 'file',
-        content: 'Welcome to LxgendOS!
-
-This is your first file. Open it, edit it, save it.
-
-Try browsing into the folders. There are some pictures in Pictures/images.'
+        content: 'Welcome to LxgendOS!\n\nThis is your first file. Open it, edit it, save it.\n\nTry browsing into the folders. There are some pictures in Pictures/images.'
       }
-      }
-      },
+    }
+  },
 
   '/home/user/.hidden': {
     type: 'folder',
@@ -453,16 +442,11 @@ Try browsing into the folders. There are some pictures in Pictures/images.'
     children: {
       'easter_egg.txt': {
         type: 'file',
-        content: 'You found the hidden folder.
-
-Congratulations.Add
-Here is your reward: nothing. 
-
-JK comment it if you found this!'
-      }
+        content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing. \n\nJK comment it if you found this!'
       }
     }
-  };
+  }
+};
 
 var whereAmI = '/home/user';
 var backTrail = [];
@@ -594,7 +578,8 @@ function drawTheFiles() {
       if (div.classList.contains('selected')) {
         div.classList.remove('selected');
         openThisThing(child, name);
-      } else {        document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+      } else {
+        document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
         div.classList.add('selected');
       }
     };
@@ -677,4 +662,99 @@ function whereDoYouLive(node, name, path) {
 
 document.addEventListener('keydown', function (e) {
   if (e.ctrlKey && e.key.toLowerCase() === 'h') {
-    var fe
+    var fe = document.getElementById('win-fileexplorer');
+    if (fe.classList.contains('open')) {
+      e.preventDefault();
+      peekabooMode = !peekabooMode;
+      drawTheFiles();
+    }
+  }
+});
+
+function saveTheNote() {
+  if (currentlyOpened) {
+    var n = findThatFolder(currentlyOpened.folder);
+    if (n && n.children && n.children[currentlyOpened.name]) {
+      n.children[currentlyOpened.name].content = document.getElementById('notepad-text').value;
+      return;
+    }
+  }
+  askWhereToSave();
+}
+
+function askWhereToSave() {
+  var sel = document.getElementById('save-folder');
+  sel.innerHTML = '';
+
+  function wander(n, path) {
+    if (n.type === 'folder') {
+      var opt = document.createElement('option');
+      opt.value = path;
+      opt.innerText = path;
+      sel.appendChild(opt);
+
+      if (n.children) {
+        Object.keys(n.children).forEach(function (k) {
+          if (n.children[k].type === 'folder') wander(n.children[k], path + '/' + k);
+        });
+      }
+    }
+  }
+  wander(folderKingdom['/home/user'], '/home/user');
+
+  document.getElementById('save-name').value = '';
+  document.getElementById('save-dialog').classList.add('open');
+}
+
+function poofSaveDialog() {
+  document.getElementById('save-dialog').classList.remove('open');
+}
+
+function actuallySaveIt() {
+  var fname = document.getElementById('save-name').value.trim();
+  if (!fname) { alert('Please enter a file name'); return; }
+  if (!fname.endsWith('.txt')) fname += '.txt';
+
+  var folderPath = document.getElementById('save-folder').value;
+  var target = findThatFolder(folderPath);
+
+  if (!target || target.type !== 'folder') { alert('Cannot save here'); return; }
+  if (!target.children) target.children = {};
+
+  target.children[fname] = {
+    type: 'file',
+    content: document.getElementById('notepad-text').value
+  };
+
+  currentlyOpened = { name: fname, folder: folderPath };
+  document.getElementById('notepad-title').innerText = 'Notepad - ' + fname;
+  poofSaveDialog();
+
+  if (document.getElementById('win-fileexplorer').classList.contains('open')) drawTheFiles();
+}
+
+var pictureZoom = 1;
+
+function showThePicture(src) {
+  document.getElementById('iv-image').src = src;
+  pictureZoom = 1;
+  document.getElementById('iv-image').style.transform = 'scale(1)';
+  document.getElementById('iv-zoom-label').innerText = '100%';
+  summonWindow('imageviewer');
+}
+
+function zoomThePicture(delta) {
+  pictureZoom += delta;
+  if (pictureZoom < 0.2) pictureZoom = 0.2;
+  if (pictureZoom > 5) pictureZoom = 5;
+  document.getElementById('iv-image').style.transform = 'scale(' + pictureZoom + ')';
+  document.getElementById('iv-zoom-label').innerText = Math.round(pictureZoom * 100) + '%';
+}
+
+function resetTheZoom() {
+  pictureZoom = 1;
+  document.getElementById('iv-image').style.transform = 'scale(1)';
+  document.getElementById('iv-zoom-label').innerText = '100%';
+}
+
+fillStartMenu('');
