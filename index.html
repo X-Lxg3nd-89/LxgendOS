@@ -13,7 +13,6 @@
 
 <div id="bg-layer"></div>
 
-<!-- BOOT -->
 <div id="boot" onclick="dismissBoot()">
   <div id="boot-bg"></div>
   <div id="boot-dim"></div>
@@ -26,11 +25,8 @@
 </div>
 
 <div id="dim-overlay"></div>
-
-<!-- DESKTOP ICONS -->
 <div id="desktop-icons"></div>
 
-<!-- CALCULATOR -->
 <div class="window calculator" id="win-calc">
   <div class="win-title" onmousedown="startDrag(event, 'win-calc')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="2" width="16" height="20" rx="2" class="acc"/><rect x="6" y="5" width="12" height="4" rx="1" fill="#fff"/></svg>Calculator</div>
@@ -64,7 +60,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-calc')"></div>
 </div>
 
-<!-- NOTEPAD -->
 <div class="window notepad" id="win-notepad">
   <div class="win-title" onmousedown="startDrag(event, 'win-notepad')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="3" width="14" height="18" rx="2" fill="#fff" class="acc-stroke" stroke-width="1.5"/></svg><span id="notepad-title">Notepad</span></div>
@@ -83,7 +78,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-notepad')"></div>
 </div>
 
-<!-- FILE EXPLORER -->
 <div class="window fileexplorer" id="win-fileexplorer">
   <div class="win-title" onmousedown="startDrag(event, 'win-fileexplorer')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>Files</div>
@@ -103,7 +97,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-fileexplorer')"></div>
 </div>
 
-<!-- THEME -->
 <div class="window themeapp" id="win-theme">
   <div class="win-title" onmousedown="startDrag(event, 'win-theme')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" fill="none" class="acc-stroke" stroke-width="2"/><path d="M12 4v8 8" class="acc-stroke" stroke-width="2"/></svg>Theme</div>
@@ -132,6 +125,26 @@
       </div>
     </div>
     <div class="theme-section">
+      <div class="theme-label">Plain colour</div>
+      <div class="color-row">
+        <div class="color-swatch" style="background:#000000" onclick="setBg('#000000', this)"></div>
+        <div class="color-swatch" style="background:#1a0000" onclick="setBg('#1a0000', this)"></div>
+        <div class="color-swatch" style="background:#0a1929" onclick="setBg('#0a1929', this)"></div>
+        <div class="color-swatch" style="background:#0d1a0d" onclick="setBg('#0d1a0d', this)"></div>
+        <div class="color-swatch" style="background:#1a0d1a" onclick="setBg('#1a0d1a', this)"></div>
+        <div class="color-swatch" style="background:#2b0000" onclick="setBg('#2b0000', this)"></div>
+        <div class="color-swatch" style="background:#1a1a1a" onclick="setBg('#1a1a1a', this)"></div>
+      </div>
+    </div>
+    <div class="theme-section">
+      <div class="theme-label">Gradient</div>
+      <div class="color-row">
+        <div class="color-swatch grad1" onclick="setBg('linear-gradient(135deg, #0f2027, #203a43, #2c5364)', this)"></div>
+        <div class="color-swatch grad2" onclick="setBg('linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)', this)"></div>
+        <div class="color-swatch grad3" onclick="setBg('linear-gradient(135deg, #000428, #004e92)', this)"></div>
+      </div>
+    </div>
+    <div class="theme-section">
       <div class="theme-label">Accent colour</div>
       <div class="accent-row" id="accent-row">
         <div class="accent-swatch selected" style="background:#0078d4" onclick="setAccent('#0078d4', '#1a88e0', this)"></div>
@@ -153,7 +166,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-theme')"></div>
 </div>
 
-<!-- SHELL -->
 <div class="window shellapp" id="win-shell">
   <div class="win-title" onmousedown="startDrag(event, 'win-shell')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" class="acc"/><path d="M6 10l3 2-3 2M12 14h6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>Shell</div>
@@ -179,7 +191,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-shell')"></div>
 </div>
 
-<!-- CLOCK APP -->
 <div class="window clockapp" id="win-clock">
   <div class="win-title" onmousedown="startDrag(event, 'win-clock')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" class="acc-stroke" stroke-width="2" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>Clock</div>
@@ -233,7 +244,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-clock')"></div>
 </div>
 
-<!-- IMAGE VIEWER -->
 <div class="window imageviewer" id="win-imageviewer">
   <div class="win-title" onmousedown="startDrag(event, 'win-imageviewer')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" class="acc"/><circle cx="9" cy="10" r="2" fill="#fff"/><path d="M3 18l5-5 4 4 4-4 5 5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>Image Viewer</div>
@@ -257,7 +267,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-imageviewer')"></div>
 </div>
 
-<!-- PAINT -->
 <div class="window paintapp" id="win-paint">
   <div class="win-title" onmousedown="startDrag(event, 'win-paint')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 000 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2c2.8 0 5-2.2 5-5 0-4.9-4.5-8.5-10-8.5z" class="acc"/></svg>Paint</div>
@@ -284,7 +293,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-paint')"></div>
 </div>
 
-<!-- APP STORE -->
 <div class="window storeapp" id="win-store">
   <div class="win-title" onmousedown="startDrag(event, 'win-store')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h16l-2 12H6L4 8z" class="acc"/><path d="M8 8V6a4 4 0 018 0v2" stroke="currentColor" stroke-width="2" fill="none"/></svg>Store</div>
@@ -304,7 +312,6 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-store')"></div>
 </div>
 
-<!-- FLOATING TASKBAR ISLAND -->
 <div class="taskbar" id="taskbar">
   <button onclick="toggleStartMenu(event)" title="Start">
     <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="9" height="9"/><rect x="13" y="2" width="9" height="9"/><rect x="2" y="13" width="9" height="9"/><rect x="13" y="13" width="9" height="9"/></svg>
@@ -326,7 +333,6 @@
   </button>
 </div>
 
-<!-- SYSTEM TRAY -->
 <div class="tray" onclick="toggleQuickSettings(event)">
   <div class="tray-icons">
     <svg viewBox="0 0 24 24"><path d="M12 21l-3-3h6zM12 15c-1.5 0-3 .5-4.5 1.5l1.5 1.5c1-.5 2-.8 3-.8s2 .3 3 .8l1.5-1.5C15 15.5 13.5 15 12 15zM12 9c-2.8 0-5.4 1-7.5 2.5l1.5 1.5c1.7-1.2 3.8-2 6-2s4.3.8 6 2l1.5-1.5C17.4 10 14.8 9 12 9zM12 3C7.8 3 4 4.5 1 7l1.5 1.5C5 6.2 8.3 5 12 5s7 1.2 9.5 3.5L23 7c-3-2.5-6.8-4-11-4z"/></svg>
@@ -339,7 +345,6 @@
   </div>
 </div>
 
-<!-- QUICK SETTINGS -->
 <div class="quick-settings" id="quick-settings" onclick="event.stopPropagation()">
   <div class="qs-row">
     <div class="qs-tile active" onclick="toggleTile(this)">
@@ -384,7 +389,6 @@
   </div>
 </div>
 
-<!-- START MENU -->
 <div class="start-menu" id="start-menu" onclick="event.stopPropagation()">
   <div class="start-search">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -394,7 +398,6 @@
   <div class="start-apps" id="start-apps"></div>
 </div>
 
-<!-- CONTEXT MENU -->
 <div class="ctx-menu" id="ctx-menu">
   <div class="ctx-item" onclick="openWin('theme')">Change wallpaper</div>
   <div class="ctx-item" onclick="openWin('fileexplorer')">Open Files</div>
@@ -402,7 +405,6 @@
   <div class="ctx-item" onclick="location.reload()">Refresh</div>
 </div>
 
-<!-- SAVE DIALOG -->
 <div class="save-dialog" id="save-dialog">
   <div class="save-box">
     <div class="save-header">
