@@ -1,83 +1,31 @@
-/* ============ BOOT ============ */
-function updateBootTime() {
+// startup stuff
+renderDesktopIcons();
+renderStartApps('');
+shellInit();
+paintInit();
+renderAlarms();
+updateClock();
+setInterval(updateClock, 1000);
+setInterval(function () {
   var d = new Date();
-  var h = d.getHours();
-  var m = d.getMinutes();
-  if (h < 10) h = '0' + h;
-  if (m < 10) m = '0' + m;
-  document.getElementById('boot-time').innerText = h + ':' + m;
-
+  var h = String(d.getHours()).padStart(2, '0');
+  var m = String(d.getMinutes()).padStart(2, '0');
+  var s = String(d.getSeconds()).padStart(2, '0');
+  var lc = document.getElementById('live-clock');
+  if (lc) lc.innerText = h + ':' + m + ':' + s;
   var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  document.getElementById('boot-date').innerText = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
-}
-updateBootTime();
-
-function dismissBoot() {
-  document.getElementById('boot').classList.add('hidden');
-}
-
-function powerOff() {
-  closeQuickSettings();
-  closeStartMenu();
-  document.querySelectorAll('.window').forEach(function (w) { w.classList.remove('open'); });
-  document.getElementById('boot').classList.remove('hidden');
-  updateBootTime();
-}
-
-/* ============ CALCULATOR ============ */
-var current = "0";
-var prev = null;
-var op = null;
-var reset = false;
-
-function updateScreen() { document.getElementById("screen").innerText = current; }
-
-function press(val) {
-  if (reset) { current = val; reset = false; }
-  else {
-    if (val == "." && current.includes(".")) return;
-    if (current == "0" && val != ".") current = val;
-    else current = current + val;
+  var ld = document.getElementById('live-date');
+  if (ld) ld.innerText = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  var timeStr = h + ':' + m;
+  for (var i = 0; i < alarms.length; i++) {
+    if (alarms[i].time === timeStr && !alarms[i].fired) {
+      alarms[i].fired = true;
+      alert('Alarm! ' + alarms[i].time);
+    }
   }
-  updateScreen();
-}
+}, 1000);
 
-function pressOp(o) {
-  if (op != null && !reset) calculate();
-  prev = current;
-  op = o;
-  reset = true;
-}
-
-function calculate() {
-  if (op == null || prev == null) return;
-  var a = parseFloat(prev);
-  var b = parseFloat(current);
-  var r = 0;
-  if (op == "+") r = a + b;
-  else if (op == "-") r = a - b;
-  else if (op == "*") r = a * b;
-  else if (op == "/") {
-    if (b == 0) { current = "Error"; updateScreen(); prev = null; op = null; reset = true; return; }
-    r = a / b;
-  }
-  r = Math.round(r * 100000000) / 100000000;
-  current = String(r);
-  prev = null;
-  op = null;
-  reset = true;
-  updateScreen();
-}
-
-function clearScreen() { current = "0"; prev = null; op = null; reset = false; updateScreen(); }
-function backspace() {
-  if (reset) { current = "0"; reset = false; }
-  else { current = current.slice(0, -1); if (current == "") current = "0"; }
-  updateScreen();
-}
-
-/* ============ APP REGISTRY ============ */
 var APPS = {
   calc: { name: 'Calculator', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><rect x="8" y="6" width="32" height="36" rx="4" class="acc"/><rect x="12" y="12" width="24" height="8" rx="2" fill="#fff"/></svg>' },
   notepad: { name: 'Notepad', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><rect x="10" y="6" width="28" height="36" rx="3" fill="#fff" class="acc-stroke" stroke-width="2"/></svg>' },
@@ -90,10 +38,67 @@ var APPS = {
   store: { name: 'Store', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><path d="M8 16h32l-4 24H12L8 16z" class="acc"/><path d="M16 16V12a8 8 0 0116 0v4" stroke="currentColor" stroke-width="3" fill="none"/></svg>' }
 };
 
-/* ============ DESKTOP ICONS ============ */
+var zTop = 10;
+var openWindows = {};
+var dragTarget = null;
+var dragX = 0, dragY = 0;
+var resizeTarget = null;
+var rsX = 0, rsY = 0, rsW = 0, rsH = 0;
 var gridSize = 100;
 var iconPositions = {};
 var selectedIcon = null;
+var current = "0";
+var prev = null;
+var op = null;
+var reset = false;
+var notepadCurrentFile = null;
+var shellInput = null;
+var ivZoomLevel = 1;
+var paintCtx = null;
+var paintDrawing = false;
+var paintCurrentTool = 'brush';
+var timerInterval = null;
+var timerRemaining = 0;
+var swInterval = null;
+var swSeconds = 0;
+var alarms = [];
+
+function updateBootTime() {
+  var d = new Date();
+  var h = d.getHours();
+  var m = d.getMinutes();
+  if (h < 10) h = '0' + h;
+  if (m < 10) m = '0' + m;
+  document.getElementById('boot-time').innerText = h + ':' + m;
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('boot-date').innerText = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+updateBootTime();
+
+function dismissBoot() { document.getElementById('boot').classList.add('hidden'); }
+
+function powerOff() {
+  closeQuickSettings(); closeStartMenu();
+  document.querySelectorAll('.window').forEach(function (w) { w.classList.remove('open'); });
+  document.getElementById('boot').classList.remove('hidden');
+  updateBootTime();
+}
+
+function updateClock() {
+  var d = new Date();
+  var h = d.getHours();
+  var m = d.getMinutes();
+  if (h < 10) h = '0' + h;
+  if (m < 10) m = '0' + m;
+  var dd = d.getDate();
+  var mm = d.getMonth() + 1;
+  var yy = d.getFullYear();
+  if (dd < 10) dd = '0' + dd;
+  if (mm < 10) mm = '0' + mm;
+  document.getElementById('tray-time').innerText = h + ':' + m;
+  document.getElementById('tray-date').innerText = dd + '/' + mm + '/' + yy;
+}
 
 function renderDesktopIcons() {
   var container = document.getElementById('desktop-icons');
@@ -118,14 +123,14 @@ function renderDesktopIcons() {
       el.addEventListener('click', function (e) {
         e.stopPropagation();
         if (selectedIcon && selectedIcon !== el) selectedIcon.classList.remove('selected');
-        if (el.classList.contains('selected')) {
-          el.classList.remove('selected');
-          selectedIcon = null;
-          openWin(appId);
-        } else {
-          el.classList.add('selected');
-          selectedIcon = el;
-        }
+        el.classList.add('selected');
+        selectedIcon = el;
+      });
+      el.addEventListener('dblclick', function (e) {
+        e.stopPropagation();
+        el.classList.remove('selected');
+        selectedIcon = null;
+        openWin(appId);
       });
       makeIconDraggable(el, appId);
     })(id, div);
@@ -134,68 +139,40 @@ function renderDesktopIcons() {
   }
 }
 
-document.addEventListener('click', function (e) {
-  if (!e.target.closest('.icon')) {
-    if (selectedIcon) { selectedIcon.classList.remove('selected'); selectedIcon = null; }
-  }
-  if (!e.target.closest('.fe-item')) {
-    document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
-  }
-  if (!e.target.closest('.start-app')) {
-    document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); });
-  }
-});
-
 function makeIconDraggable(el, id) {
   var dragging = false;
-  var wasDragged = false;
   var startX = 0, startY = 0, startL = 0, startT = 0;
-
   el.addEventListener('mousedown', function (e) {
     if (e.target.closest('.icon') !== el) return;
     dragging = true;
-    wasDragged = false;
     startX = e.clientX;
     startY = e.clientY;
     startL = parseInt(el.style.left) || 0;
     startT = parseInt(el.style.top) || 0;
     e.preventDefault();
   });
-
   document.addEventListener('mousemove', function (e) {
     if (!dragging) return;
-    var dx = e.clientX - startX;
-    var dy = e.clientY - startY;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-      wasDragged = true;
-      el.classList.add('dragging');
-    }
-    el.style.left = (startL + dx) + 'px';
-    el.style.top = (startT + dy) + 'px';
+    el.classList.add('dragging');
+    el.style.left = (startL + e.clientX - startX) + 'px';
+    el.style.top = (startT + e.clientY - startY) + 'px';
   });
-
   document.addEventListener('mouseup', function () {
     if (!dragging) return;
     dragging = false;
-    if (wasDragged) {
-      el.classList.remove('dragging');
-      var x = parseInt(el.style.left);
-      var y = parseInt(el.style.top);
-      var snappedX = Math.round(x / gridSize) * gridSize;
-      var snappedY = Math.round(y / gridSize) * gridSize;
-      if (snappedX < 0) snappedX = 0;
-      if (snappedY < 0) snappedY = 0;
-      if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150) / gridSize) * gridSize;
-      el.style.left = snappedX + 'px';
-      el.style.top = snappedY + 'px';
-      iconPositions[id] = { x: snappedX, y: snappedY };
-    }
+    el.classList.remove('dragging');
+    var x = parseInt(el.style.left);
+    var y = parseInt(el.style.top);
+    var snappedX = Math.round(x / gridSize) * gridSize;
+    var snappedY = Math.round(y / gridSize) * gridSize;
+    if (snappedX < 0) snappedX = 0;
+    if (snappedY < 0) snappedY = 0;
+    if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150) / gridSize) * gridSize;
+    el.style.left = snappedX + 'px';
+    el.style.top = snappedY + 'px';
+    iconPositions[id] = { x: snappedX, y: snappedY };
   });
 }
-
-/* ============ WINDOW MANAGEMENT ============ */
-var zTop = 10;
-var openWindows = {};
 
 function openWin(id) {
   var w = document.getElementById("win-" + id);
@@ -205,40 +182,16 @@ function openWin(id) {
   openWindows[id] = true;
   if (id === 'fileexplorer') feRender();
   if (id === 'store') renderStore();
-  closeStartMenu();
-  closeQuickSettings();
+  closeStartMenu(); closeQuickSettings();
   updateTaskbarRunning();
 }
-
-function closeWin(id) {
-  document.getElementById("win-" + id).classList.remove("open");
-  delete openWindows[id];
-  updateTaskbarRunning();
-}
-
-function minWin(id) {
-  document.getElementById("win-" + id).classList.remove("open");
-  delete openWindows[id];
-  updateTaskbarRunning();
-}
-
+function closeWin(id) { document.getElementById("win-" + id).classList.remove("open"); delete openWindows[id]; updateTaskbarRunning(); }
+function minWin(id) { document.getElementById("win-" + id).classList.remove("open"); delete openWindows[id]; updateTaskbarRunning(); }
 function maxWin(id) {
   var w = document.getElementById("win-" + id);
-  if (w.dataset.max == "1") {
-    w.style.width = ""; w.style.height = "";
-    w.style.left = "50%"; w.style.top = "50%";
-    w.style.transform = "translate(-50%, -50%)";
-    w.dataset.max = "0";
-  } else {
-    w.style.width = "90vw"; w.style.height = "80vh";
-    w.style.left = "5vw"; w.style.top = "10vh";
-    w.style.transform = "none";
-    w.dataset.max = "1";
-  }
+  if (w.dataset.max == "1") { w.style.width = ""; w.style.height = ""; w.style.left = "50%"; w.style.top = "50%"; w.style.transform = "translate(-50%, -50%)"; w.dataset.max = "0"; }
+  else { w.style.width = "90vw"; w.style.height = "80vh"; w.style.left = "5vw"; w.style.top = "10vh"; w.style.transform = "none"; w.dataset.max = "1"; }
 }
-
-var dragTarget = null;
-var dragX = 0, dragY = 0;
 
 function startDrag(e, id) {
   if (e.target.classList.contains("dot")) return;
@@ -253,21 +206,8 @@ function startDrag(e, id) {
   document.addEventListener("mousemove", doDrag);
   document.addEventListener("mouseup", endDrag);
 }
-
-function doDrag(e) {
-  if (!dragTarget) return;
-  dragTarget.style.left = (e.clientX - dragX) + "px";
-  dragTarget.style.top = (e.clientY - dragY) + "px";
-}
-
-function endDrag() {
-  dragTarget = null;
-  document.removeEventListener("mousemove", doDrag);
-  document.removeEventListener("mouseup", endDrag);
-}
-
-var resizeTarget = null;
-var rsX = 0, rsY = 0, rsW = 0, rsH = 0;
+function doDrag(e) { if (!dragTarget) return; dragTarget.style.left = (e.clientX - dragX) + "px"; dragTarget.style.top = (e.clientY - dragY) + "px"; }
+function endDrag() { dragTarget = null; document.removeEventListener("mousemove", doDrag); document.removeEventListener("mouseup", endDrag); }
 
 function startResize(e, id) {
   resizeTarget = document.getElementById(id);
@@ -276,16 +216,11 @@ function startResize(e, id) {
   resizeTarget.style.transform = "none";
   resizeTarget.style.left = rect.left + "px";
   resizeTarget.style.top = rect.top + "px";
-  rsX = e.clientX;
-  rsY = e.clientY;
-  rsW = rect.width;
-  rsH = rect.height;
-  e.preventDefault();
-  e.stopPropagation();
+  rsX = e.clientX; rsY = e.clientY; rsW = rect.width; rsH = rect.height;
+  e.preventDefault(); e.stopPropagation();
   document.addEventListener("mousemove", doResize);
   document.addEventListener("mouseup", endResize);
 }
-
 function doResize(e) {
   if (!resizeTarget) return;
   var w = rsW + (e.clientX - rsX);
@@ -295,12 +230,7 @@ function doResize(e) {
   resizeTarget.style.width = w + "px";
   resizeTarget.style.height = h + "px";
 }
-
-function endResize() {
-  resizeTarget = null;
-  document.removeEventListener("mousemove", doResize);
-  document.removeEventListener("mouseup", endResize);
-}
+function endResize() { resizeTarget = null; document.removeEventListener("mousemove", doResize); document.removeEventListener("mouseup", endResize); }
 
 function updateTaskbarRunning() {
   for (var id in APPS) {
@@ -311,19 +241,42 @@ function updateTaskbarRunning() {
   }
 }
 
-/* ============ THEME ============ */
+function updateScreen() { document.getElementById("screen").innerText = current; }
+function press(val) {
+  if (reset) { current = val; reset = false; }
+  else { if (val == "." && current.includes(".")) return; if (current == "0" && val != ".") current = val; else current = current + val; }
+  updateScreen();
+}
+function pressOp(o) { if (op != null && !reset) calculate(); prev = current; op = o; reset = true; }
+function calculate() {
+  if (op == null || prev == null) return;
+  var a = parseFloat(prev);
+  var b = parseFloat(current);
+  var r = 0;
+  if (op == "+") r = a + b;
+  else if (op == "-") r = a - b;
+  else if (op == "*") r = a * b;
+  else if (op == "/") { if (b == 0) { current = "Error"; updateScreen(); prev = null; op = null; reset = true; return; } r = a / b; }
+  r = Math.round(r * 100000000) / 100000000;
+  current = String(r); prev = null; op = null; reset = true; updateScreen();
+}
+function clearScreen() { current = "0"; prev = null; op = null; reset = false; updateScreen(); }
+function backspace() { if (reset) { current = "0"; reset = false; } else { current = current.slice(0, -1); if (current == "") current = "0"; } updateScreen(); }
+
 function setBg(value, el) {
   var layer = document.getElementById('bg-layer');
-  if (value.charAt(0) == "#") {
+  if (value.indexOf('gradient') === 0) {
+    layer.style.backgroundImage = value;
+    layer.style.backgroundColor = 'transparent';
+  } else if (value.charAt(0) == "#") {
     layer.style.backgroundImage = "none";
     layer.style.backgroundColor = value;
   } else {
     layer.style.backgroundImage = "url('" + value + "')";
   }
-  document.querySelectorAll(".bg-thumb").forEach(function (t) { t.classList.remove("selected"); });
+  document.querySelectorAll(".bg-thumb, .color-swatch").forEach(function (t) { t.classList.remove("selected"); });
   if (el) el.classList.add("selected");
 }
-
 function importBg(e) {
   var file = e.target.files[0];
   if (!file) return;
@@ -339,57 +292,20 @@ function importBg(e) {
   };
   reader.readAsDataURL(file);
 }
-
 function setAccent(color, hover, el) {
   document.documentElement.style.setProperty('--accent', color);
   document.documentElement.style.setProperty('--accent-hover', hover);
   document.querySelectorAll('.accent-swatch').forEach(function (s) { s.classList.remove('selected'); });
   if (el) el.classList.add('selected');
 }
+function toggleMode() { document.body.classList.toggle('light'); }
 
-function toggleMode() {
-  document.body.classList.toggle('light');
-}
-
-/* ============ CLOCK ============ */
-function updateClock() {
-  var d = new Date();
-  var h = d.getHours();
-  var m = d.getMinutes();
-  if (h < 10) h = '0' + h;
-  if (m < 10) m = '0' + m;
-  var dd = d.getDate();
-  var mm = d.getMonth() + 1;
-  var yy = d.getFullYear();
-  if (dd < 10) dd = '0' + dd;
-  if (mm < 10) mm = '0' + mm;
-  document.getElementById('tray-time').innerText = h + ':' + m;
-  document.getElementById('tray-date').innerText = dd + '/' + mm + '/' + yy;
-}
-updateClock();
-setInterval(updateClock, 1000);
-
-/* ============ QUICK SETTINGS ============ */
-function toggleQuickSettings(e) {
-  if (e) e.stopPropagation();
-  document.getElementById('quick-settings').classList.toggle('open');
-  closeStartMenu();
-}
-
-function closeQuickSettings() {
-  document.getElementById('quick-settings').classList.remove('open');
-}
-
+function toggleQuickSettings(e) { if (e) e.stopPropagation(); document.getElementById('quick-settings').classList.toggle('open'); closeStartMenu(); }
+function closeQuickSettings() { document.getElementById('quick-settings').classList.remove('open'); }
 function toggleTile(el) { el.classList.toggle('active'); }
-
-function setBrightness(v) {
-  var overlay = document.getElementById('dim-overlay');
-  overlay.style.opacity = (100 - v) / 100 * 0.85;
-}
-
+function setBrightness(v) { document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85; }
 function setVolume(v) { }
 
-/* ============ START MENU ============ */
 function renderStartApps(filter) {
   var container = document.getElementById('start-apps');
   container.innerHTML = '';
@@ -399,30 +315,25 @@ function renderStartApps(filter) {
       list.push({ id: id, name: APPS[id].name, icon: APPS[id].icon });
     }
   }
-  if (list.length === 0) {
-    container.innerHTML = '<div class="start-empty">No apps found</div>';
-    return;
-  }
+  if (list.length === 0) { container.innerHTML = '<div class="start-empty">No apps found</div>'; return; }
   list.forEach(function (app) {
     var div = document.createElement('div');
     div.className = 'start-app';
     div.innerHTML = '<div class="sa-icon">' + app.icon + '</div><div class="sa-label">' + app.name + '</div>';
     div.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (div.classList.contains('selected')) {
-        div.classList.remove('selected');
-        openWin(app.id);
-      } else {
-        document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); });
-        div.classList.add('selected');
-      }
+      document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); });
+      div.classList.add('selected');
+    });
+    div.addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      div.classList.remove('selected');
+      openWin(app.id);
     });
     container.appendChild(div);
   });
 }
-
 function filterStartApps(v) { renderStartApps(v); }
-
 function toggleStartMenu(e) {
   if (e) e.stopPropagation();
   var menu = document.getElementById('start-menu');
@@ -434,23 +345,20 @@ function toggleStartMenu(e) {
     setTimeout(function () { document.getElementById('start-search-input').focus(); }, 50);
   }
 }
+function closeStartMenu() { document.getElementById('start-menu').classList.remove('open'); }
 
-function closeStartMenu() {
-  document.getElementById('start-menu').classList.remove('open');
-}
-
-/* ============ GLOBAL CLICKS ============ */
 document.addEventListener('click', function (e) {
   var qs = document.getElementById('quick-settings');
   var tray = document.querySelector('.tray');
   if (qs.classList.contains('open') && !qs.contains(e.target) && !tray.contains(e.target)) qs.classList.remove('open');
-
   var sm = document.getElementById('start-menu');
   var startBtn = document.querySelector('.taskbar button[title="Start"]');
   if (sm.classList.contains('open') && !sm.contains(e.target) && !startBtn.contains(e.target)) sm.classList.remove('open');
-
   var ctx = document.getElementById('ctx-menu');
   if (ctx.classList.contains('open') && !ctx.contains(e.target)) ctx.classList.remove('open');
+  if (!e.target.closest('.icon')) { if (selectedIcon) { selectedIcon.classList.remove('selected'); selectedIcon = null; } }
+  if (!e.target.closest('.fe-item')) { document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); }); }
+  if (!e.target.closest('.start-app')) { document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); }); }
 });
 
 document.addEventListener('contextmenu', function (e) {
@@ -462,63 +370,34 @@ document.addEventListener('contextmenu', function (e) {
   ctx.classList.add('open');
 });
 
-/* ============ FILE SYSTEM ============ */
 var feFS = {
   '/home/user': {
     type: 'folder',
     children: {
-      'Documents': {
-        type: 'folder',
-        children: {
-          'readme.txt': { type: 'file', content: 'LxgendOS — web desktop.\n\nType "help" in the Shell for a surprise.' },
-          'todo.txt': { type: 'file', content: '1. Build LxgendOS\n2. Add more apps\n3. Ship it' }
-        }
-      },
-      'Desktop': {
-        type: 'folder',
-        children: {
-          'Calculator.lxg': { type: 'app', appId: 'calc' },
-          'Notepad.lxg': { type: 'app', appId: 'notepad' },
-          'Files.lxg': { type: 'app', appId: 'fileexplorer' },
-          'Theme.lxg': { type: 'app', appId: 'theme' },
-          'Shell.lxg': { type: 'app', appId: 'shell' },
-          'Clock.lxg': { type: 'app', appId: 'clock' },
-          'Paint.lxg': { type: 'app', appId: 'paint' },
-          'Store.lxg': { type: 'app', appId: 'store' }
-        }
-      },
-      'Pictures': {
-        type: 'folder',
-        children: {
-          'wallpapers': { type: 'folder', children: {} }
-        }
-      },
-      'Projects': {
-        type: 'folder',
-        children: {
-          'lxgendos': {
-            type: 'folder',
-            children: {
-              'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- Windows 11 style\n- Blue accent\n- Inter font everywhere' }
-            }
-          }
-        }
-      },
-      'welcome.txt': {
-        type: 'file',
-        content: 'Welcome to LxgendOS!\n\nFirst click to select, second click to open.\nTry Ctrl+H in Files for a hidden folder.'
-      }
+      'Documents': { type: 'folder', children: {
+        'readme.txt': { type: 'file', content: 'LxgendOS — web desktop.\n\nType "help" in the Shell for a surprise.' },
+        'todo.txt': { type: 'file', content: '1. Build LxgendOS\n2. Add more apps\n3. Ship it' }
+      }},
+      'Desktop': { type: 'folder', children: {
+        'Calculator.lxg': { type: 'app', appId: 'calc' },
+        'Notepad.lxg': { type: 'app', appId: 'notepad' },
+        'Files.lxg': { type: 'app', appId: 'fileexplorer' },
+        'Theme.lxg': { type: 'app', appId: 'theme' },
+        'Shell.lxg': { type: 'app', appId: 'shell' },
+        'Clock.lxg': { type: 'app', appId: 'clock' },
+        'Paint.lxg': { type: 'app', appId: 'paint' },
+        'Store.lxg': { type: 'app', appId: 'store' }
+      }},
+      'Pictures': { type: 'folder', children: { 'wallpapers': { type: 'folder', children: {} } } },
+      'Projects': { type: 'folder', children: { 'lxgendos': { type: 'folder', children: {
+        'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- Windows 11 style\n- Blue accent\n- Inter font everywhere' }
+      }}}},
+      'welcome.txt': { type: 'file', content: 'Welcome to LxgendOS!\n\nDouble-click to open things.\nTry Ctrl+H in Files for a hidden folder.' }
     }
   },
   '/home/user/.hidden': {
-    type: 'folder',
-    hidden: true,
-    children: {
-      'easter_egg.txt': {
-        type: 'file',
-        content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing.\n\nBut you smiled, right?'
-      }
-    }
+    type: 'folder', hidden: true,
+    children: { 'easter_egg.txt': { type: 'file', content: 'You found the hidden folder.\n\nCongratulations.\n\nHere is your reward: nothing.\n\nBut you smiled, right?' } }
   }
 };
 
@@ -544,16 +423,10 @@ function feRender() {
   var node = feGetNode(feCwd);
   document.getElementById('fe-path').innerText = feCwd;
   list.innerHTML = '';
-
-  if (!node || node.type !== 'folder') {
-    list.innerHTML = '<div class="fe-empty">Cannot open this location</div>';
-    return;
-  }
-
+  if (!node || node.type !== 'folder') { list.innerHTML = '<div class="fe-empty">Cannot open this location</div>'; return; }
   var children = node.children || {};
   var keys = Object.keys(children);
   var shown = 0;
-
   keys.forEach(function (name) {
     var child = children[name];
     if (feSearchTerm && name.toLowerCase().indexOf(feSearchTerm.toLowerCase()) === -1) return;
@@ -569,24 +442,23 @@ function feRender() {
     div.addEventListener('click', function (e) {
       e.stopPropagation();
       document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
-      if (div.classList.contains('selected')) {
-        div.classList.remove('selected');
-        if (child.type === 'folder') {
-          feHistory.push(feCwd);
-          feCwd = feCwd + '/' + name;
-          feSearchTerm = '';
-          document.getElementById('fe-search').value = '';
-          feRender();
-        } else if (child.type === 'app') {
-          openWin(child.appId);
-        } else {
-          openNotepadFile(name, child.content);
-        }
+      div.classList.add('selected');
+    });
+    div.addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      div.classList.remove('selected');
+      if (child.type === 'folder') {
+        feHistory.push(feCwd);
+        feCwd = feCwd + '/' + name;
+        feSearchTerm = '';
+        document.getElementById('fe-search').value = '';
+        feRender();
+      } else if (child.type === 'app') {
+        openWin(child.appId);
       } else {
-        div.classList.add('selected');
+        openNotepadFile(name, child.content);
       }
     });
-
     list.appendChild(div);
   });
 
@@ -596,40 +468,22 @@ function feRender() {
       var div = document.createElement('div');
       div.className = 'fe-item';
       div.innerHTML = '<div class="fe-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc" opacity="0.5"/></svg></div><span style="opacity:0.6">.hidden</span>';
-      div.onclick = function () {
+      div.addEventListener('click', function (e) { e.stopPropagation(); });
+      div.addEventListener('dblclick', function () {
         feHistory.push(feCwd);
         feCwd = '/home/user/.hidden';
         feRender();
-      };
+      });
       list.appendChild(div);
       shown++;
     }
   }
-
   if (shown === 0) list.innerHTML = '<div class="fe-empty">No items found</div>';
 }
 
-function feGoBack() {
-  if (feHistory.length > 0) {
-    feCwd = feHistory.pop();
-    feSearchTerm = '';
-    document.getElementById('fe-search').value = '';
-    feRender();
-  }
-}
-
-function feGoHome() {
-  feCwd = '/home/user';
-  feHistory = [];
-  feSearchTerm = '';
-  document.getElementById('fe-search').value = '';
-  feRender();
-}
-
+function feGoBack() { if (feHistory.length > 0) { feCwd = feHistory.pop(); feSearchTerm = ''; document.getElementById('fe-search').value = ''; feRender(); } }
+function feGoHome() { feCwd = '/home/user'; feHistory = []; feSearchTerm = ''; document.getElementById('fe-search').value = ''; feRender(); }
 function feSearch(term) { feSearchTerm = term; feRender(); }
-
-/* ============ NOTEPAD ============ */
-var notepadCurrentFile = null;
 
 function openNotepadFile(name, content) {
   document.getElementById('notepad-text').value = content || '';
@@ -638,16 +492,12 @@ function openNotepadFile(name, content) {
   notepadCurrentFile = folder ? { name: name, folder: folder } : null;
   openWin('notepad');
 }
-
 function findFileFolder(node, name, path) {
   if (!node.children) return null;
   if (node.children[name] && node.children[name].type === 'file') return path;
   for (var k in node.children) {
     var child = node.children[k];
-    if (child.type === 'folder') {
-      var r = findFileFolder(child, name, path + '/' + k);
-      if (r) return r;
-    }
+    if (child.type === 'folder') { var r = findFileFolder(child, name, path + '/' + k); if (r) return r; }
   }
   return null;
 }
@@ -655,11 +505,7 @@ function findFileFolder(node, name, path) {
 document.addEventListener('keydown', function (e) {
   if (e.ctrlKey && e.key.toLowerCase() === 'h') {
     var fe = document.getElementById('win-fileexplorer');
-    if (fe.classList.contains('open')) {
-      e.preventDefault();
-      feShowHidden = !feShowHidden;
-      feRender();
-    }
+    if (fe.classList.contains('open')) { e.preventDefault(); feShowHidden = !feShowHidden; feRender(); }
   }
 });
 
@@ -673,30 +519,22 @@ function saveNotepad() {
   }
   openSaveDialog();
 }
-
 function openSaveDialog() {
   var select = document.getElementById('save-folder');
   select.innerHTML = '';
   function walk(n, path) {
     if (n.type === 'folder') {
       var opt = document.createElement('option');
-      opt.value = path;
-      opt.innerText = path;
+      opt.value = path; opt.innerText = path;
       select.appendChild(opt);
-      if (n.children) {
-        Object.keys(n.children).forEach(function (k) {
-          if (n.children[k].type === 'folder') walk(n.children[k], path + '/' + k);
-        });
-      }
+      if (n.children) Object.keys(n.children).forEach(function (k) { if (n.children[k].type === 'folder') walk(n.children[k], path + '/' + k); });
     }
   }
   walk(feFS['/home/user'], '/home/user');
   document.getElementById('save-name').value = '';
   document.getElementById('save-dialog').classList.add('open');
 }
-
 function closeSaveDialog() { document.getElementById('save-dialog').classList.remove('open'); }
-
 function confirmSave() {
   var name = document.getElementById('save-name').value.trim();
   if (!name) { alert('Please enter a file name'); return; }
@@ -712,52 +550,38 @@ function confirmSave() {
   if (document.getElementById('win-fileexplorer').classList.contains('open')) feRender();
 }
 
-/* ============ SHELL ============ */
-var shellInput = null;
-
 function shellInit() {
   shellInput = document.getElementById('shell-input');
   if (!shellInput) return;
   shellInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      var cmd = this.value.trim();
-      if (cmd) shellRun(cmd);
-      this.value = '';
-    }
+    if (e.key === 'Enter') { e.preventDefault(); var cmd = this.value.trim(); if (cmd) shellRun(cmd); this.value = ''; }
   });
   setTimeout(function () { if (shellInput) shellInput.focus(); }, 100);
 }
-
-function shellWrite(text, cls) {
+function shellWrite(text) {
   var body = document.getElementById('shell-body');
   var line = document.getElementById('shell-input-line');
   var div = document.createElement('div');
-  if (cls) div.className = cls;
   div.textContent = text;
   body.insertBefore(div, line);
   body.scrollTop = body.scrollHeight;
 }
-
 function shellRun(cmd) {
   var body = document.getElementById('shell-body');
   var line = document.getElementById('shell-input-line');
-
   var prompt = document.createElement('div');
   prompt.className = 'shell-line';
   prompt.innerHTML = '<span class="shell-prompt">lxg&gt;</span><span>' + escHtml(cmd) + '</span>';
   body.insertBefore(prompt, line);
-
   var parts = cmd.split(' ');
   var c = parts[0].toLowerCase();
   var args = parts.slice(1);
-
   if (c === 'help') {
     shellWrite('Available commands:');
     shellWrite('  help          — this list');
     shellWrite('  ver           — version info');
     shellWrite('  whoami        — show current user');
-    shellWrite('  pwd           — print working dir (filesystem)');
+    shellWrite('  pwd           — print working dir');
     shellWrite('  ls [path]     — list files in current/path');
     shellWrite('  cat <file>    — print a text file');
     shellWrite('  open <app>    — open app (calc, notepad, shell, etc.)');
@@ -769,26 +593,17 @@ function shellRun(cmd) {
     shellWrite('  time          — show now');
     shellWrite('  clear         — clear screen');
     shellWrite('  boot          — return to boot screen');
-  } else if (c === 'ver') {
-    shellWrite('LxgendOS Shell v1.0');
-    shellWrite('Build: lxg-2025');
-  } else if (c === 'whoami') {
-    shellWrite('user');
-  } else if (c === 'pwd') {
-    shellWrite(feCwd);
-  } else if (c === 'ls') {
+  } else if (c === 'ver') { shellWrite('LxgendOS Shell v1.0'); shellWrite('Build: lxg-2025'); }
+  else if (c === 'whoami') { shellWrite('user'); }
+  else if (c === 'pwd') { shellWrite(feCwd); }
+  else if (c === 'ls') {
     var path = args[0] || feCwd;
-    if (path.charAt(0) !== '/') {
-      path = feCwd === '/home/user' ? '/home/user/' + path : feCwd + '/' + path;
-    }
+    if (path.charAt(0) !== '/') path = feCwd === '/home/user' ? '/home/user/' + path : feCwd + '/' + path;
     var node = feGetNode(path);
     if (!node || node.type !== 'folder') { shellWrite('ls: no such folder'); return; }
     var keys = Object.keys(node.children || {});
     if (keys.length === 0) shellWrite('(empty)');
-    else keys.forEach(function (k) {
-      var child = node.children[k];
-      shellWrite((child.type === 'folder' ? '[dir]  ' : '       ') + k);
-    });
+    else keys.forEach(function (k) { var child = node.children[k]; shellWrite((child.type === 'folder' ? '[dir]  ' : '       ') + k); });
   } else if (c === 'cat') {
     if (!args[0]) { shellWrite('cat: missing file name'); return; }
     var node = feGetNode(feCwd + '/' + args[0]);
@@ -801,80 +616,30 @@ function shellRun(cmd) {
     if (aliases[appId]) appId = aliases[appId];
     if (APPS[appId]) { openWin(appId); shellWrite('Opened ' + APPS[appId].name); }
     else shellWrite('open: unknown app "' + appId + '"');
-  } else if (c === 'apps') {
-    for (var id in APPS) shellWrite('  ' + id.padEnd(14) + APPS[id].name);
-  } else if (c === 'color') {
+  } else if (c === 'apps') { for (var id in APPS) shellWrite('  ' + id.padEnd(14) + APPS[id].name); }
+  else if (c === 'color') {
     if (!args[0] || args[0].charAt(0) !== '#') { shellWrite('color: give a hex like #00ff00'); return; }
     setAccent(args[0], args[0], null);
     shellWrite('Accent set to ' + args[0]);
-  } else if (c === 'theme') {
-    openWin('theme');
-    shellWrite('Opened Theme app');
-  } else if (c === 'echo') {
-    shellWrite(args.join(' '));
-  } else if (c === 'date') {
-    shellWrite(new Date().toDateString());
-  } else if (c === 'time') {
-    shellWrite(new Date().toLocaleTimeString());
-  } else if (c === 'clear') {
-    body.querySelectorAll('div').forEach(function (d) {
-      if (d.id !== 'shell-input-line') d.remove();
-    });
-    return;
-  } else if (c === 'boot') {
-    powerOff();
-    return;
-  } else {
-    shellWrite('lxg: unknown command "' + c + '". Try "help".');
-  }
+  } else if (c === 'theme') { openWin('theme'); shellWrite('Opened Theme app'); }
+  else if (c === 'echo') { shellWrite(args.join(' ')); }
+  else if (c === 'date') { shellWrite(new Date().toDateString()); }
+  else if (c === 'time') { shellWrite(new Date().toLocaleTimeString()); }
+  else if (c === 'clear') { body.querySelectorAll('div').forEach(function (d) { if (d.id !== 'shell-input-line') d.remove(); }); return; }
+  else if (c === 'boot') { powerOff(); return; }
+  else { shellWrite('lxg: unknown command "' + c + '". Try "help".'); }
 }
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-function escHtml(s) {
-  var d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-/* ============ CLOCK APP ============ */
 function switchClockTab(el, tab) {
   document.querySelectorAll('.clock-tab').forEach(function (t) { t.classList.remove('active'); });
   document.querySelectorAll('.clock-content').forEach(function (c) { c.classList.remove('active'); });
   el.classList.add('active');
   document.getElementById('clock-tab-' + tab).classList.add('active');
 }
-
-setInterval(function () {
-  var d = new Date();
-  var h = String(d.getHours()).padStart(2, '0');
-  var m = String(d.getMinutes()).padStart(2, '0');
-  var s = String(d.getSeconds()).padStart(2, '0');
-  var lc = document.getElementById('live-clock');
-  if (lc) lc.innerText = h + ':' + m + ':' + s;
-  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var ld = document.getElementById('live-date');
-  if (ld) ld.innerText = days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-
-  var timeStr = h + ':' + m;
-  for (var i = 0; i < alarms.length; i++) {
-    if (alarms[i].time === timeStr && !alarms[i].fired) {
-      alarms[i].fired = true;
-      alert('Alarm! ' + alarms[i].time);
-    }
-  }
-}, 1000);
-
-var timerInterval = null;
-var timerRemaining = 0;
-
 function timerToggle() {
   var btn = document.getElementById('timer-start');
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-    btn.innerText = 'Start';
-    return;
-  }
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; btn.innerText = 'Start'; return; }
   if (timerRemaining <= 0) {
     var h = parseInt(document.getElementById('timer-h').value) || 0;
     var m = parseInt(document.getElementById('timer-m').value) || 0;
@@ -886,84 +651,35 @@ function timerToggle() {
   timerInterval = setInterval(function () {
     timerRemaining--;
     updateTimerDisplay();
-    if (timerRemaining <= 0) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      document.getElementById('timer-start').innerText = 'Start';
-      alert('Timer done!');
-    }
+    if (timerRemaining <= 0) { clearInterval(timerInterval); timerInterval = null; document.getElementById('timer-start').innerText = 'Start'; alert('Timer done!'); }
   }, 1000);
 }
-
 function updateTimerDisplay() {
   var h = Math.floor(timerRemaining / 3600);
   var m = Math.floor((timerRemaining % 3600) / 60);
   var s = timerRemaining % 60;
-  document.getElementById('timer-display').innerText =
-    String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  document.getElementById('timer-display').innerText = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
-
-function timerReset() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  timerRemaining = 0;
-  document.getElementById('timer-start').innerText = 'Start';
-  updateTimerDisplay();
-}
-
-var swInterval = null;
-var swSeconds = 0;
-
+function timerReset() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } timerRemaining = 0; document.getElementById('timer-start').innerText = 'Start'; updateTimerDisplay(); }
 function swToggle() {
   var btn = document.getElementById('sw-start');
-  if (swInterval) {
-    clearInterval(swInterval);
-    swInterval = null;
-    btn.innerText = 'Start';
-    return;
-  }
+  if (swInterval) { clearInterval(swInterval); swInterval = null; btn.innerText = 'Start'; return; }
   btn.innerText = 'Pause';
-  swInterval = setInterval(function () {
-    swSeconds++;
-    updateSwDisplay();
-  }, 1000);
+  swInterval = setInterval(function () { swSeconds++; updateSwDisplay(); }, 1000);
 }
-
 function updateSwDisplay() {
   var h = Math.floor(swSeconds / 3600);
   var m = Math.floor((swSeconds % 3600) / 60);
   var s = swSeconds % 60;
-  document.getElementById('stopwatch-display').innerText =
-    String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  document.getElementById('stopwatch-display').innerText = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
-
-function swReset() {
-  if (swInterval) { clearInterval(swInterval); swInterval = null; }
-  swSeconds = 0;
-  document.getElementById('sw-start').innerText = 'Start';
-  updateSwDisplay();
-}
-
-var alarms = [];
-
-function addAlarm() {
-  var t = document.getElementById('alarm-time').value;
-  if (!t) return;
-  alarms.push({ time: t, fired: false });
-  renderAlarms();
-}
-
-function removeAlarm(i) {
-  alarms.splice(i, 1);
-  renderAlarms();
-}
-
+function swReset() { if (swInterval) { clearInterval(swInterval); swInterval = null; } swSeconds = 0; document.getElementById('sw-start').innerText = 'Start'; updateSwDisplay(); }
+function addAlarm() { var t = document.getElementById('alarm-time').value; if (!t) return; alarms.push({ time: t, fired: false }); renderAlarms(); }
+function removeAlarm(i) { alarms.splice(i, 1); renderAlarms(); }
 function renderAlarms() {
   var list = document.getElementById('alarm-list');
   list.innerHTML = '';
-  if (alarms.length === 0) {
-    list.innerHTML = '<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:20px 0">No alarms set</div>';
-    return;
-  }
+  if (alarms.length === 0) { list.innerHTML = '<div style="color:var(--text-dim);text-align:center;font-size:12px;padding:20px 0">No alarms set</div>'; return; }
   alarms.forEach(function (a, i) {
     var div = document.createElement('div');
     div.className = 'alarm-item';
@@ -976,9 +692,6 @@ function renderAlarms() {
   });
 }
 
-/* ============ IMAGE VIEWER ============ */
-var ivZoomLevel = 1;
-
 function ivOpen(src) {
   document.getElementById('iv-image').src = src;
   ivZoomLevel = 1;
@@ -986,7 +699,6 @@ function ivOpen(src) {
   document.getElementById('iv-zoom-label').innerText = '100%';
   openWin('imageviewer');
 }
-
 function ivZoom(delta) {
   ivZoomLevel += delta;
   if (ivZoomLevel < 0.2) ivZoomLevel = 0.2;
@@ -994,17 +706,7 @@ function ivZoom(delta) {
   document.getElementById('iv-image').style.transform = 'scale(' + ivZoomLevel + ')';
   document.getElementById('iv-zoom-label').innerText = Math.round(ivZoomLevel * 100) + '%';
 }
-
-function ivReset() {
-  ivZoomLevel = 1;
-  document.getElementById('iv-image').style.transform = 'scale(1)';
-  document.getElementById('iv-zoom-label').innerText = '100%';
-}
-
-/* ============ PAINT ============ */
-var paintCtx = null;
-var paintDrawing = false;
-var paintCurrentTool = 'brush';
+function ivReset() { ivZoomLevel = 1; document.getElementById('iv-image').style.transform = 'scale(1)'; document.getElementById('iv-zoom-label').innerText = '100%'; }
 
 function paintInit() {
   var canvas = document.getElementById('paint-canvas');
@@ -1013,14 +715,12 @@ function paintInit() {
   paintCtx.fillRect(0, 0, canvas.width, canvas.height);
   paintCtx.lineCap = 'round';
   paintCtx.lineJoin = 'round';
-
   canvas.addEventListener('mousedown', function (e) {
     paintDrawing = true;
     paintCtx.beginPath();
     var rect = canvas.getBoundingClientRect();
     paintCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
   });
-
   canvas.addEventListener('mousemove', function (e) {
     if (!paintDrawing) return;
     var rect = canvas.getBoundingClientRect();
@@ -1031,32 +731,25 @@ function paintInit() {
     paintCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     paintCtx.stroke();
   });
-
   document.addEventListener('mouseup', function () { paintDrawing = false; });
 }
-
 function paintTool(t) {
   paintCurrentTool = t;
   document.getElementById('paint-brush').classList.toggle('active', t === 'brush');
   document.getElementById('paint-eraser').classList.toggle('active', t === 'eraser');
 }
-
 function paintClear() {
   var canvas = document.getElementById('paint-canvas');
   paintCtx.fillStyle = '#ffffff';
   paintCtx.fillRect(0, 0, canvas.width, canvas.height);
 }
-
 function paintSave() {
   var canvas = document.getElementById('paint-canvas');
   var url = canvas.toDataURL('image/png');
   var a = document.createElement('a');
-  a.href = url;
-  a.download = 'lxgend-paint.png';
-  a.click();
+  a.href = url; a.download = 'lxgend-paint.png'; a.click();
 }
 
-/* ============ APP STORE ============ */
 var storeApps = [
   { id: 'web', name: 'Web Browser', desc: 'Coming soon', icon: '🌐', disabled: true },
   { id: 'music', name: 'Music Player', desc: 'Coming soon', icon: '🎵', disabled: true },
@@ -1065,19 +758,13 @@ var storeApps = [
   { id: 'video', name: 'Video Player', desc: 'Coming soon', icon: '🎬', disabled: true },
   { id: 'photos', name: 'Photos', desc: 'Coming soon', icon: '🖼️', disabled: true }
 ];
-
 function renderStore() {
   var grid = document.getElementById('store-grid');
   grid.innerHTML = '';
   storeApps.forEach(function (app) {
     var card = document.createElement('div');
     card.className = 'store-card';
-    card.innerHTML =
-      '<div class="sc-icon">' + app.icon + '</div>' +
-      '<div class="sc-info">' +
-        '<div class="sc-name">' + app.name + '</div>' +
-        '<div class="sc-desc">' + app.desc + '</div>' +
-      '</div>';
+    card.innerHTML = '<div class="sc-icon">' + app.icon + '</div><div class="sc-info"><div class="sc-name">' + app.name + '</div><div class="sc-desc">' + app.desc + '</div></div>';
     var b = document.createElement('button');
     b.className = 'sc-btn installed';
     b.innerText = 'Coming soon';
@@ -1085,9 +772,3 @@ function renderStore() {
     grid.appendChild(card);
   });
 }
-
-renderDesktopIcons();
-renderStartApps('');
-shellInit();
-paintInit();
-renderAlarms();
