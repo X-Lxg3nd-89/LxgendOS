@@ -1,3 +1,4 @@
+
 @font-face {
   font-family: 'Korataki';
   src: url('fonts/korataki_extrabold.otf') format('opentype');
@@ -60,7 +61,11 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--bg) center / cover no-repeat;
+  background-image: url('BGs/bg1.jpg');
+  background-color: var(--bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 #dim-overlay {
@@ -70,9 +75,7 @@ body {
   background: #000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .15s;
 }
-
 
 #boot {
   position: fixed;
@@ -146,7 +149,6 @@ body {
   opacity: .5;
 }
 
-
 .icons {
   position: absolute;
   top: 20px; left: 20px;
@@ -171,6 +173,11 @@ body {
   border-color: rgba(255,255,255,0.1);
 }
 
+.icon.selected {
+  background: rgba(0, 120, 212, 0.25);
+  border-color: var(--accent);
+}
+
 .icon .ic {
   width: 40px;
   height: 40px;
@@ -189,7 +196,6 @@ body {
   text-align: center;
   text-shadow: 0 1px 2px rgba(0,0,0,.8);
 }
-
 
 .taskbar {
   position: absolute;
@@ -244,7 +250,6 @@ body {
 }
 .tray-time .t { font-weight: 600 }
 .tray-time .d { font-size: 11px; color: var(--text-dim); }
-
 
 .quick-settings, .start-menu, .ctx-menu {
   display: none;
@@ -359,7 +364,6 @@ body {
 }
 .qs-footer .power svg { width: 16px; height: 16px; fill: var(--text) }
 
-
 .start-menu {
   position: absolute;
   bottom: 56px;
@@ -423,7 +427,15 @@ body {
   gap: 8px;
   padding: 14px 6px;
   border-radius: 6px;
+  border: 1px solid transparent;
   cursor: pointer;
+}
+
+.start-app:hover { background: var(--btn-hover) }
+
+.start-app.selected {
+  background: rgba(0, 120, 212, 0.25);
+  border-color: var(--accent);
 }
 
 .start-app .sa-icon {
@@ -443,7 +455,6 @@ body {
   font-size: 13px;
   color: var(--text-dim);
 }
-
 
 .ctx-menu {
   position: absolute;
@@ -465,8 +476,8 @@ body {
   cursor: pointer;
 }
 
+.ctx-item:hover { background: var(--btn-hover) }
 .ctx-sep { height: 1px; margin: 4px 6px; background: var(--popup-border); }
-
 
 .window {
   position: absolute;
@@ -525,7 +536,6 @@ body {
 .dot.red    { background: #FF5F57; }
 .dot:hover  { filter: brightness(1.25); }
 
-
 .icon .ic svg .acc,
 .win-title .title-left svg .acc,
 .fe-item .fe-icon svg .acc,
@@ -544,12 +554,10 @@ body {
 .mode-toggle:hover,
 .fe-btn:hover,
 .fe-item:hover,
-.start-app:hover,
 .ctx-item:hover,
 .qs-tile:hover,
 .qs-footer .power:hover,
 .save-footer button:hover { background: var(--btn-hover); }
-
 
 .calculator { width: 320px }
 
@@ -583,7 +591,6 @@ body {
 
 .calc-buttons .accent { background: var(--accent); color: #fff; }
 .calc-buttons .accent:hover { background: var(--accent-hover) }
-
 
 .notepad { width: 500px; }
 
@@ -623,7 +630,6 @@ body {
   resize: none;
   outline: none;
 }
-
 
 .themeapp { width: 440px; }
 
@@ -746,7 +752,6 @@ body {
   height: 18px;
   background: var(--win-border);
   border-radius: 10px;
-  transition: background .15s;
 }
 
 .mode-toggle .mt-track::after {
@@ -757,12 +762,10 @@ body {
   height: 14px;
   background: #fff;
   border-radius: 50%;
-  transition: transform .15s;
 }
 
 body.light .mode-toggle .mt-track { background: var(--accent); }
 body.light .mode-toggle .mt-track::after { transform: translateX(16px) }
-
 
 .fileexplorer { width: 700px; height: 480px }
 
@@ -823,10 +826,18 @@ body.light .mode-toggle .mt-track::after { transform: translateX(16px) }
   gap: 10px;
   padding: 8px 10px;
   border-radius: 4px;
+  border: 1px solid transparent;
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
+}
+
+.fe-item:hover { background: var(--btn-hover) }
+
+.fe-item.selected {
+  background: rgba(0, 120, 212, 0.25);
+  border-color: var(--accent);
 }
 
 .fe-item .fe-icon {
@@ -846,8 +857,51 @@ body.light .mode-toggle .mt-track::after { transform: translateX(16px) }
 
 .fe-list::-webkit-scrollbar { width: 8px }
 .fe-list::-webkit-scrollbar-track { background: transparent }
-.fe-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+.fe-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px }
 
+.imageviewer { width: 640px; height: 500px; }
+
+.iv-toolbar {
+  display: flex;
+  align-items: center;  gap: 6px;
+  padding: 8px 10px;
+  background: var(--win-bg);
+  border-bottom: 1px solid var(--win-border);
+  flex-shrink: 0;
+}
+
+.iv-toolbar button {
+  padding: 6px 12px;
+  background: var(--btn);
+  color: var(--text);
+  font-size: 13px;
+  border: 1px solid var(--win-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.iv-toolbar button:hover { background: var(--btn-hover) }
+
+.iv-zoom-label {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.iv-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #0a0a0a;
+}
+
+.iv-canvas-wrap img {
+  max-width: none;
+  transform-origin: center;
+}
 
 .save-dialog {
   position: fixed;
