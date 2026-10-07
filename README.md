@@ -14,7 +14,7 @@ Demo Link: https://x-lxg3nd-89.github.io/LxgendOS/
 Dependencies - None (It works locally!)
 
 ---
-![test](images/image.png)
+
 # Current features
 
 - **clock** which syncs with your current time
