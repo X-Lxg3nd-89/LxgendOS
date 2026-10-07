@@ -7,8 +7,11 @@ var APPS = {
   clock: { name: 'Clock', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" fill="none" class="acc-stroke" stroke-width="3"/><path d="M24 12v12l7 5" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none"/></svg>' },
   imageviewer: { name: 'Image Viewer', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><rect x="6" y="8" width="36" height="32" rx="3" class="acc"/><circle cx="17" cy="20" r="4" fill="#fff"/><path d="M6 34l10-10 8 8 8-8 10 10" stroke="#fff" stroke-width="2.5" fill="none"/></svg>' },
   paint: { name: 'Paint', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><path d="M24 4a20 20 0 000 40c2.2 0 4-1.8 4-4 0-1-.4-2-1-2.6-.6-.8-1-1.6-1-2.4 0-2.2 1.8-4 4-4h4c5.6 0 10-4.4 10-10 0-9.8-9-17-20-17z" class="acc"/></svg>' },
-  store: { name: 'Store', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><path d="M8 16h32l-4 24H12L8 16z" class="acc"/><path d="M16 16V12a8 8 0 0116 0v4" stroke="currentColor" stroke-width="3" fill="none"/></svg>' }
+  store: { name: 'Store', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><path d="M8 16h32l-4 24H12L8 16z" class="acc"/><path d="M16 16V12a8 8 0 0116 0v4" stroke="currentColor" stroke-width="3" fill="none"/></svg>' },
+  browser: { name: 'Browser', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" fill="none" class="acc-stroke" stroke-width="3"/><path d="M6 24h36M24 6a30 30 0 010 36M24 6a30 30 0 000 36" stroke="currentColor" stroke-width="2" fill="none"/></svg>' }
 };
+
+var shellInitialHTML = document.getElementById('shell-body').innerHTML;
 
 var zTop = 10;
 var openWindows = {};
@@ -17,6 +20,7 @@ var dragX = 0, dragY = 0;
 var resizeTarget = null;
 var rsX = 0, rsY = 0, rsW = 0, rsH = 0;
 var gridSize = 100;
+var gridPadding = 20;
 var iconPositions = {};
 var selectedIcon = null;
 var current = "0";
@@ -34,6 +38,8 @@ var timerRemaining = 0;
 var swInterval = null;
 var swSeconds = 0;
 var alarms = [];
+var browserHistory = [null];
+var browserHistIndex = 0;
 
 function updateBootTime() {
   var d = new Date();
@@ -49,14 +55,22 @@ function updateBootTime() {
 
 function dismissBoot() {
   document.getElementById('boot').classList.add('hidden');
+  document.body.classList.add('booted');
 }
 
 function powerOff() {
   closeQuickSettings();
   closeStartMenu();
-  document.querySelectorAll('.window').forEach(function (w) { w.classList.remove('open'); });
-  document.getElementById('boot').classList.remove('hidden');
-  updateBootTime();
+  document.querySelectorAll('.window.open, .window.minimized').forEach(function (w) {
+    w.classList.remove('open', 'minimized');
+  });
+  openWindows = {};
+  updateTaskbarRunning();
+  document.body.classList.remove('booted');
+  setTimeout(function () {
+    document.getElementById('boot').classList.remove('hidden');
+    updateBootTime();
+  }, 250);
 }
 
 function updateClock() {
@@ -78,11 +92,12 @@ function renderDesktopIcons() {
   var container = document.getElementById('desktop-icons');
   container.innerHTML = '';
   var col = 0, row = 0;
+  var iconIndex = 0;
   for (var id in APPS) {
     var app = APPS[id];
     if (!app.showDesktop) continue;
     if (!iconPositions[id]) {
-      iconPositions[id] = { x: 20 + col * gridSize, y: 20 + row * gridSize };
+      iconPositions[id] = { x: gridPadding + col * gridSize, y: gridPadding + row * gridSize };
       row++;
       if (row > 5) { row = 0; col++; }
     }
@@ -91,7 +106,9 @@ function renderDesktopIcons() {
     div.id = 'di-' + id;
     div.style.left = iconPositions[id].x + 'px';
     div.style.top = iconPositions[id].y + 'px';
+    div.style.animationDelay = (iconIndex * 0.045) + 's';
     div.innerHTML = '<div class="ic">' + app.icon + '</div><span>' + app.name + '</span>';
+    iconIndex++;
 
     (function (appId, el) {
       el.addEventListener('click', function (e) {
@@ -104,7 +121,7 @@ function renderDesktopIcons() {
         e.stopPropagation();
         el.classList.remove('selected');
         selectedIcon = null;
-        openWin(appId);
+        openWin(appId, el);
       });
       makeIconDraggable(el, appId);
     })(id, div);
@@ -116,7 +133,6 @@ function renderDesktopIcons() {
 function makeIconDraggable(el, id) {
   var dragging = false;
   var startX = 0, startY = 0, startL = 0, startT = 0;
-
   el.addEventListener('mousedown', function (e) {
     if (e.target.closest('.icon') !== el) return;
     dragging = true;
@@ -126,54 +142,173 @@ function makeIconDraggable(el, id) {
     startT = parseInt(el.style.top) || 0;
     e.preventDefault();
   });
-
   document.addEventListener('mousemove', function (e) {
     if (!dragging) return;
     el.classList.add('dragging');
     el.style.left = (startL + e.clientX - startX) + 'px';
     el.style.top = (startT + e.clientY - startY) + 'px';
   });
-
   document.addEventListener('mouseup', function () {
     if (!dragging) return;
     dragging = false;
     el.classList.remove('dragging');
     var x = parseInt(el.style.left);
     var y = parseInt(el.style.top);
-    var snappedX = Math.round(x / gridSize) * gridSize;
-    var snappedY = Math.round(y / gridSize) * gridSize;
-    if (snappedX < 0) snappedX = 0;
-    if (snappedY < 0) snappedY = 0;
-    if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150) / gridSize) * gridSize;
+    var snappedX = Math.round((x - gridPadding) / gridSize) * gridSize + gridPadding;
+    var snappedY = Math.round((y - gridPadding) / gridSize) * gridSize + gridPadding;
+    if (snappedX < gridPadding) snappedX = gridPadding;
+    if (snappedY < gridPadding) snappedY = gridPadding;
+    if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150 - gridPadding) / gridSize) * gridSize + gridPadding;
     el.style.left = snappedX + 'px';
     el.style.top = snappedY + 'px';
     iconPositions[id] = { x: snappedX, y: snappedY };
   });
 }
 
-function openWin(id) {
+function openWin(id, sourceEl) {
   var w = document.getElementById("win-" + id);
   if (!w) return;
-  w.classList.add("open");
+
+  if (openWindows[id]) {
+    w.style.zIndex = ++zTop;
+    return;
+  }
+
+  if (w.classList.contains('minimized')) {
+    w.style.zIndex = ++zTop;
+    w.classList.remove('minimized');
+    openWindows[id] = true;
+    updateTaskbarRunning();
+    return;
+  }
+
+  w.classList.add('instant');
+
+  var winW = w.offsetWidth;
+  var winH = w.offsetHeight;
+
+  if (!w.style.left || w.style.left.indexOf('%') !== -1 || !w.style.top) {
+    w.style.left = ((window.innerWidth - winW) / 2) + 'px';
+    w.style.top = ((window.innerHeight - winH) / 2) + 'px';
+  }
+
+  if (sourceEl) {
+    var src = sourceEl.getBoundingClientRect();
+    var winLeft = parseFloat(w.style.left);
+    var winTop = parseFloat(w.style.top);
+    var ox = ((src.left + src.width / 2) - winLeft) / winW * 100;
+    var oy = ((src.top + src.height / 2) - winTop) / winH * 100;
+    w.style.transformOrigin = ox + '% ' + oy + '%';
+  } else {
+    w.style.transformOrigin = '50% 50%';
+  }
+
+  void w.offsetWidth;
+  w.classList.remove('instant');
+
+  w.classList.add('open');
   w.style.zIndex = ++zTop;
   openWindows[id] = true;
+
   if (id === 'fileexplorer') feRender();
   if (id === 'store') renderStore();
+  if (id === 'shell') setTimeout(function () { if (shellInput) shellInput.focus(); }, 100);
+
   closeStartMenu();
   closeQuickSettings();
   updateTaskbarRunning();
 }
 
+function resetCalc() {
+  current = "0";
+  prev = null;
+  op = null;
+  reset = false;
+  updateScreen();
+}
+
+function resetNotepad() {
+  document.getElementById('notepad-text').value = '';
+  notepadCurrentFile = null;
+  document.getElementById('notepad-title').innerText = 'Notepad';
+}
+
+function resetShell() {
+  document.getElementById('shell-body').innerHTML = shellInitialHTML;
+  shellInit();
+}
+
+function resetClock() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (swInterval) { clearInterval(swInterval); swInterval = null; }
+  timerRemaining = 0;
+  swSeconds = 0;
+  alarms = [];
+  document.getElementById('timer-start').innerText = 'Start';
+  document.getElementById('sw-start').innerText = 'Start';
+  document.getElementById('timer-h').value = '0';
+  document.getElementById('timer-m').value = '1';
+  document.getElementById('timer-s').value = '0';
+  updateTimerDisplay();
+  updateSwDisplay();
+  renderAlarms();
+}
+
+function resetImageViewer() {
+  document.getElementById('iv-image').src = '';
+  ivZoomLevel = 1;
+  document.getElementById('iv-image').style.transform = 'scale(1)';
+  document.getElementById('iv-zoom-label').innerText = '100%';
+}
+
+function resetPaint() {
+  var canvas = document.getElementById('paint-canvas');
+  paintCtx.fillStyle = '#ffffff';
+  paintCtx.fillRect(0, 0, canvas.width, canvas.height);
+  paintCurrentTool = 'brush';
+  document.getElementById('paint-brush').classList.add('active');
+  document.getElementById('paint-eraser').classList.remove('active');
+}
+
+function resetBrowser() {
+  browserHistory = [null];
+  browserHistIndex = 0;
+  showBrowserHome();
+}
+
+function resetFiles() {
+  feCwd = '/home/user';
+  feHistory = [];
+  feSearchTerm = '';
+  feShowHidden = false;
+  document.getElementById('fe-search').value = '';
+}
+
 function closeWin(id) {
   var w = document.getElementById("win-" + id);
-  if (w) w.classList.remove("open");
+  if (!w) return;
+  w.classList.remove('open', 'minimized');
   delete openWindows[id];
   updateTaskbarRunning();
+
+  if (id === 'calc') resetCalc();
+  else if (id === 'notepad') resetNotepad();
+  else if (id === 'shell') resetShell();
+  else if (id === 'clock') resetClock();
+  else if (id === 'imageviewer') resetImageViewer();
+  else if (id === 'paint') resetPaint();
+  else if (id === 'browser') resetBrowser();
+  else if (id === 'fileexplorer') resetFiles();
 }
 
 function minWin(id) {
   var w = document.getElementById("win-" + id);
-  if (w) w.classList.remove("open");
+  if (!w) return;
+  w.style.transition = 'none';
+  w.style.transformOrigin = '50% 100%';
+  void w.offsetWidth;
+  w.style.transition = '';
+  w.classList.add('minimized');
   delete openWindows[id];
   updateTaskbarRunning();
 }
@@ -181,27 +316,34 @@ function minWin(id) {
 function maxWin(id) {
   var w = document.getElementById("win-" + id);
   if (!w) return;
+
   if (w.dataset.max == "1") {
-    w.style.width = ""; w.style.height = "";
-    w.style.left = "50%"; w.style.top = "50%";
-    w.style.transform = "translate(-50%, -50%)";
+    if (w.dataset.origW) w.style.width = w.dataset.origW;
+    if (w.dataset.origH) w.style.height = w.dataset.origH;
+    if (w.dataset.origL) w.style.left = w.dataset.origL;
+    if (w.dataset.origT) w.style.top = w.dataset.origT;
     w.dataset.max = "0";
   } else {
-    w.style.width = "90vw"; w.style.height = "80vh";
-    w.style.left = "5vw"; w.style.top = "10vh";
-    w.style.transform = "none";
+    var cs = getComputedStyle(w);
+    w.dataset.origW = cs.width;
+    w.dataset.origH = cs.height;
+    w.dataset.origL = cs.left;
+    w.dataset.origT = cs.top;
+    w.style.width = (window.innerWidth - 40) + 'px';
+    w.style.height = (window.innerHeight - 100) + 'px';
+    w.style.left = '20px';
+    w.style.top = '20px';
     w.dataset.max = "1";
   }
 }
 
 function startDrag(e, id) {
   if (e.target.classList.contains("dot")) return;
-  dragTarget = document.getElementById(id);
+  var w = document.getElementById(id);
+  w.style.transition = 'none';
+  var rect = w.getBoundingClientRect();
+  dragTarget = w;
   dragTarget.style.zIndex = ++zTop;
-  var rect = dragTarget.getBoundingClientRect();
-  dragTarget.style.transform = "none";
-  dragTarget.style.left = rect.left + "px";
-  dragTarget.style.top = rect.top + "px";
   dragX = e.clientX - rect.left;
   dragY = e.clientY - rect.top;
   document.addEventListener("mousemove", doDrag);
@@ -215,20 +357,22 @@ function doDrag(e) {
 }
 
 function endDrag() {
+  if (dragTarget) dragTarget.style.transition = '';
   dragTarget = null;
   document.removeEventListener("mousemove", doDrag);
   document.removeEventListener("mouseup", endDrag);
 }
 
 function startResize(e, id) {
-  resizeTarget = document.getElementById(id);
+  var w = document.getElementById(id);
+  w.style.transition = 'none';
+  resizeTarget = w;
   resizeTarget.style.zIndex = ++zTop;
-  var rect = resizeTarget.getBoundingClientRect();
-  resizeTarget.style.transform = "none";
-  resizeTarget.style.left = rect.left + "px";
-  resizeTarget.style.top = rect.top + "px";
-  rsX = e.clientX; rsY = e.clientY;
-  rsW = rect.width; rsH = rect.height;
+  var rect = w.getBoundingClientRect();
+  rsX = e.clientX;
+  rsY = e.clientY;
+  rsW = rect.width;
+  rsH = rect.height;
   e.preventDefault();
   e.stopPropagation();
   document.addEventListener("mousemove", doResize);
@@ -246,6 +390,7 @@ function doResize(e) {
 }
 
 function endResize() {
+  if (resizeTarget) resizeTarget.style.transition = '';
   resizeTarget = null;
   document.removeEventListener("mousemove", doResize);
   document.removeEventListener("mouseup", endResize);
@@ -300,7 +445,10 @@ function calculate() {
 }
 
 function clearScreen() {
-  current = "0"; prev = null; op = null; reset = false;
+  current = "0";
+  prev = null;
+  op = null;
+  reset = false;
   updateScreen();
 }
 
@@ -312,7 +460,7 @@ function backspace() {
 
 function setBg(value, el) {
   var layer = document.getElementById('bg-layer');
-  if (value.indexOf('gradient') === 0) {
+  if (value.indexOf('gradient') !== -1) {
     layer.style.backgroundImage = value;
     layer.style.backgroundColor = 'transparent';
   } else if (value.charAt(0) == "#") {
@@ -348,7 +496,7 @@ function setAccent(color, hover, el) {
   if (el) el.classList.add('selected');
 }
 
-function toggleMode() { 
+function toggleMode() {
   document.body.classList.toggle('light');
 }
 
@@ -363,11 +511,7 @@ function closeQuickSettings() {
 }
 
 function toggleTile(el) { el.classList.toggle('active'); }
-
-function setBrightness(v) {
-  document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85;
-}
-
+function setBrightness(v) { document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85; }
 function setVolume(v) { }
 
 function renderStartApps(filter) {
@@ -395,7 +539,7 @@ function renderStartApps(filter) {
     div.addEventListener('dblclick', function (e) {
       e.stopPropagation();
       div.classList.remove('selected');
-      openWin(app.id);
+      openWin(app.id, div);
     });
     container.appendChild(div);
   });
@@ -411,7 +555,7 @@ function toggleStartMenu(e) {
   if (menu.classList.contains('open')) {
     renderStartApps('');
     document.getElementById('start-search-input').value = '';
-    setTimeout(function () { document.getElementById('start-search-input').focus(); }, 50);
+    setTimeout(function () { document.getElementById('start-search-input').focus(); }, 100);
   }
 }
 
@@ -467,9 +611,18 @@ var feFS = {
         'Shell.lxg': { type: 'app', appId: 'shell' },
         'Clock.lxg': { type: 'app', appId: 'clock' },
         'Paint.lxg': { type: 'app', appId: 'paint' },
-        'Store.lxg': { type: 'app', appId: 'store' }
+        'Store.lxg': { type: 'app', appId: 'store' },
+        'Browser.lxg': { type: 'app', appId: 'browser' }
       }},
-      'Pictures': { type: 'folder', children: { 'wallpapers': { type: 'folder', children: {} } } },
+      'Pictures': { type: 'folder', children: {
+        'wallpapers': { type: 'folder', children: {
+          'bg1.jpg': { type: 'image', src: 'BGs/bg1.jpg' },
+          'bg2.jpg': { type: 'image', src: 'BGs/bg2.jpg' },
+          'bg3.jpg': { type: 'image', src: 'BGs/bg3.jpg' },
+          'bg4.jpg': { type: 'image', src: 'BGs/bg4.jpg' },
+          'bg5.png': { type: 'image', src: 'BGs/bg5.png' }
+        }}
+      }},
       'Projects': { type: 'folder', children: { 'lxgendos': { type: 'folder', children: {
         'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- Windows 11 style\n- Blue accent\n- Inter font everywhere' }
       }}}},
@@ -523,6 +676,7 @@ function feRender() {
     var icon;
     if (child.type === 'folder') icon = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>';
     else if (child.type === 'app') icon = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" class="acc"/></svg>';
+    else if (child.type === 'image') icon = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" class="acc"/><circle cx="9" cy="10" r="2" fill="#fff"/><path d="M3 18l5-5 4 4 4-4 5 5" stroke="#fff" stroke-width="1.5" fill="none"/></svg>';
     else icon = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v13a1 1 0 01-1 1H6a1 1 0 01-1-1V3a1 1 0 011-1z" fill="#fff" class="acc-stroke" stroke-width="1.5"/></svg>';
     div.innerHTML = '<div class="fe-icon">' + icon + '</div><span>' + name + '</span>';
 
@@ -541,7 +695,9 @@ function feRender() {
         document.getElementById('fe-search').value = '';
         feRender();
       } else if (child.type === 'app') {
-        openWin(child.appId);
+        openWin(child.appId, div);
+      } else if (child.type === 'image') {
+        ivOpen(child.src);
       } else {
         openNotepadFile(name, child.content);
       }
@@ -608,7 +764,6 @@ function findFileFolder(node, name, path) {
   return null;
 }
 
-// ctrl+h toggles hidden folder inside Files
 document.addEventListener('keydown', function (e) {
   if (e.ctrlKey && e.key.toLowerCase() === 'h') {
     var fe = document.getElementById('win-fileexplorer');
@@ -682,7 +837,6 @@ function shellInit() {
       this.value = '';
     }
   });
-  setTimeout(function () { if (shellInput) shellInput.focus(); }, 100);
 }
 
 function shellWrite(text) {
@@ -712,9 +866,9 @@ function shellRun(cmd) {
     shellWrite('  ver           — version info');
     shellWrite('  whoami        — show current user');
     shellWrite('  pwd           — print working dir');
-    shellWrite('  ls [path]     — list files in current/path');
+    shellWrite('  ls [path]     — list files');
     shellWrite('  cat <file>    — print a text file');
-    shellWrite('  open <app>    — open app (calc, notepad, shell, etc.)');
+    shellWrite('  open <app>    — open app');
     shellWrite('  apps          — list all apps');
     shellWrite('  color <hex>   — change accent colour');
     shellWrite('  theme         — open theme app');
@@ -930,17 +1084,25 @@ function paintInit() {
     paintDrawing = true;
     paintCtx.beginPath();
     var rect = canvas.getBoundingClientRect();
-    paintCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var x = (e.clientX - rect.left) * scaleX;
+    var y = (e.clientY - rect.top) * scaleY;
+    paintCtx.moveTo(x, y);
   });
 
   canvas.addEventListener('mousemove', function (e) {
     if (!paintDrawing) return;
     var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var x = (e.clientX - rect.left) * scaleX;
+    var y = (e.clientY - rect.top) * scaleY;
     var size = parseInt(document.getElementById('paint-size').value);
-    paintCtx.lineWidth = size;
+    paintCtx.lineWidth = size * scaleX;
     if (paintCurrentTool === 'eraser') paintCtx.strokeStyle = '#ffffff';
     else paintCtx.strokeStyle = document.getElementById('paint-color').value;
-    paintCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    paintCtx.lineTo(x, y);
     paintCtx.stroke();
   });
 
@@ -969,7 +1131,7 @@ function paintSave() {
 }
 
 var storeApps = [
-  { id: 'web', name: 'Web Browser', desc: 'Coming soon', icon: '🌐', disabled: true },
+  { id: 'web', name: 'Web Browser', desc: 'Browse the web', icon: '🌐' },
   { id: 'music', name: 'Music Player', desc: 'Coming soon', icon: '🎵', disabled: true },
   { id: 'mail', name: 'Mail', desc: 'Coming soon', icon: '✉️', disabled: true },
   { id: 'code', name: 'Code Editor', desc: 'Coming soon', icon: '💻', disabled: true },
@@ -985,11 +1147,71 @@ function renderStore() {
     card.className = 'store-card';
     card.innerHTML = '<div class="sc-icon">' + app.icon + '</div><div class="sc-info"><div class="sc-name">' + app.name + '</div><div class="sc-desc">' + app.desc + '</div></div>';
     var b = document.createElement('button');
-    b.className = 'sc-btn installed';
-    b.innerText = 'Coming soon';
+    b.className = 'sc-btn' + (app.disabled ? ' installed' : '');
+    b.innerText = app.disabled ? 'Coming soon' : 'Open';
+    b.onclick = function () {
+      if (app.disabled) return;
+      if (app.id === 'web') { closeWin('store'); openWin('browser'); }
+    };
     card.appendChild(b);
     grid.appendChild(card);
   });
+}
+
+function navigateTo(url) {
+  var frame = document.getElementById('browser-frame');
+  var home = document.getElementById('browser-home');
+  home.style.display = 'none';
+  frame.style.display = 'block';
+  frame.src = url;
+  document.getElementById('browser-url').value = url;
+}
+
+function showBrowserHome() {
+  document.getElementById('browser-home').style.display = 'flex';
+  document.getElementById('browser-frame').style.display = 'none';
+  document.getElementById('browser-frame').src = 'about:blank';
+  document.getElementById('browser-url').value = '';
+}
+
+function browserGo(input) {
+  input = (input || '').trim();
+  if (!input) return;
+  var url;
+  if (input.match(/^https?:\/\//)) url = input;
+  else if (input.match(/^[\w-]+\.(com|org|net|io|dev|co|edu|gov|in|gg|xyz|app|site|me|tv)(\/.*)?$/i)) url = 'https://' + input;
+  else url = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(input);
+
+  navigateTo(url);
+
+  browserHistory = browserHistory.slice(0, browserHistIndex + 1);
+  browserHistory.push(url);
+  browserHistIndex = browserHistory.length - 1;
+}
+
+function browserBack() {
+  if (browserHistIndex <= 0) return;
+  browserHistIndex--;
+  var url = browserHistory[browserHistIndex];
+  if (url === null) showBrowserHome();
+  else navigateTo(url);
+}
+
+function browserForward() {
+  if (browserHistIndex >= browserHistory.length - 1) return;
+  browserHistIndex++;
+  var url = browserHistory[browserHistIndex];
+  if (url === null) showBrowserHome();
+  else navigateTo(url);
+}
+
+function browserReload() {
+  var frame = document.getElementById('browser-frame');
+  if (frame.style.display !== 'none' && frame.src && frame.src !== 'about:blank') {
+    var src = frame.src;
+    frame.src = 'about:blank';
+    setTimeout(function () { frame.src = src; }, 30);
+  }
 }
 
 updateBootTime();
