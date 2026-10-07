@@ -1295,7 +1295,7 @@ body.light .mode-toggle .mt-track::after { transform: translateX(16px); }
   padding: 9px 12px;
   color: var(--text);
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif; 
   outline: none;
 }
 

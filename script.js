@@ -348,7 +348,7 @@ function setAccent(color, hover, el) {
   if (el) el.classList.add('selected');
 }
 
-function toggleMode() {
+function toggleMode() { 
   document.body.classList.toggle('light');
 }
 
