@@ -11,10 +11,12 @@ var APPS = {
   browser: { name: 'Browser', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" fill="none" class="acc-stroke" stroke-width="3"/><path d="M6 24h36M24 6a30 30 0 010 36M24 6a30 30 0 000 36" stroke="currentColor" stroke-width="2" fill="none"/></svg>' }
 };
 
+var pinnedApps = ['fileexplorer', 'store', 'browser', 'clock', 'notepad', 'shell'];
 var shellInitialHTML = document.getElementById('shell-body').innerHTML;
 
 var zTop = 10;
 var openWindows = {};
+var minimizedWindows = {};
 var dragTarget = null;
 var dragX = 0, dragY = 0;
 var resizeTarget = null;
@@ -65,7 +67,8 @@ function powerOff() {
     w.classList.remove('open', 'minimized');
   });
   openWindows = {};
-  updateTaskbarRunning();
+  minimizedWindows = {};
+  updateTaskbar();
   document.body.classList.remove('booted');
   setTimeout(function () {
     document.getElementById('boot').classList.remove('hidden');
@@ -174,11 +177,12 @@ function openWin(id, sourceEl) {
     return;
   }
 
-  if (w.classList.contains('minimized')) {
+  if (minimizedWindows[id]) {
     w.style.zIndex = ++zTop;
     w.classList.remove('minimized');
     openWindows[id] = true;
-    updateTaskbarRunning();
+    delete minimizedWindows[id];
+    updateTaskbar();
     return;
   }
 
@@ -216,7 +220,7 @@ function openWin(id, sourceEl) {
 
   closeStartMenu();
   closeQuickSettings();
-  updateTaskbarRunning();
+  updateTaskbar();
 }
 
 function resetCalc() {
@@ -289,7 +293,8 @@ function closeWin(id) {
   if (!w) return;
   w.classList.remove('open', 'minimized');
   delete openWindows[id];
-  updateTaskbarRunning();
+  delete minimizedWindows[id];
+  updateTaskbar();
 
   if (id === 'calc') resetCalc();
   else if (id === 'notepad') resetNotepad();
@@ -310,7 +315,8 @@ function minWin(id) {
   w.style.transition = '';
   w.classList.add('minimized');
   delete openWindows[id];
-  updateTaskbarRunning();
+  minimizedWindows[id] = true;
+  updateTaskbar();
 }
 
 function maxWin(id) {
@@ -396,11 +402,41 @@ function endResize() {
   document.removeEventListener("mouseup", endResize);
 }
 
-function updateTaskbarRunning() {
+function updateTaskbar() {
+  var taskbar = document.querySelector('.taskbar');
+
+  document.querySelectorAll('.taskbar .tb-dynamic').forEach(function (btn) {
+    var id = btn.dataset.appId;
+    if (!openWindows[id] && !minimizedWindows[id]) {
+      btn.classList.remove('visible');
+      setTimeout(function () { btn.remove(); }, 360);
+    }
+  });
+
+  for (var id in APPS) {
+    if (pinnedApps.indexOf(id) !== -1) continue;
+    if (openWindows[id] || minimizedWindows[id]) {
+      if (!document.getElementById('tb-' + id)) {
+        (function (appId) {
+          var btn = document.createElement('button');
+          btn.id = 'tb-' + appId;
+          btn.className = 'tb-dynamic';
+          btn.dataset.appId = appId;
+          btn.title = APPS[appId].name;
+          btn.onclick = function () { openWin(appId, this); };
+          btn.innerHTML = APPS[appId].icon;
+          taskbar.appendChild(btn);
+          void btn.offsetWidth;
+          btn.classList.add('visible');
+        })(id);
+      }
+    }
+  }
+
   for (var id in APPS) {
     var btn = document.getElementById('tb-' + id);
     if (!btn) continue;
-    if (openWindows[id]) btn.classList.add('running');
+    if (openWindows[id] || minimizedWindows[id]) btn.classList.add('running');
     else btn.classList.remove('running');
   }
 }
@@ -624,7 +660,7 @@ var feFS = {
         }}
       }},
       'Projects': { type: 'folder', children: { 'lxgendos': { type: 'folder', children: {
-        'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- nothin'}
+        'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- Windows 11 style\n- Blue accent\n- Inter font everywhere' }
       }}}},
       'welcome.txt': { type: 'file', content: 'Welcome to LxgendOS!\n\nDouble-click to open things.\nTry Ctrl+H in Files for a hidden folder.' }
     }
