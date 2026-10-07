@@ -624,7 +624,7 @@ var feFS = {
         }}
       }},
       'Projects': { type: 'folder', children: { 'lxgendos': { type: 'folder', children: {
-        'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- Windows 11 style\n- Blue accent\n- Inter font everywhere' }
+        'notes.txt': { type: 'file', content: 'LxgendOS project notes:\n- nothin'}
       }}}},
       'welcome.txt': { type: 'file', content: 'Welcome to LxgendOS!\n\nDouble-click to open things.\nTry Ctrl+H in Files for a hidden folder.' }
     }
