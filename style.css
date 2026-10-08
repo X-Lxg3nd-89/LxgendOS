@@ -1052,7 +1052,7 @@ body.booted .tray { opacity: 1; transform: none; }
 
 /* battery saver kills animations */
 body.battery-saver .window { transition: none !important; }
-body.battery-saver .icon { animation: none !important; }
+body.battery-saver .icon { animation-play-state: paused !important; }
 
 /* airplane mode swaps the wifi icon */
 .tray-icons .airplane-icon { display: none; }
