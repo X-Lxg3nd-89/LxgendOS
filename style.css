@@ -79,6 +79,40 @@ body {
   transition: opacity 0.15s;
 }
 
+#night-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: #ffb84d;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  transition: opacity 0.3s;
+}
+#night-overlay.on { opacity: 0.22; }
+
+.qs-tile.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+body.battery-saver .window {
+  transition: none !important;
+}
+body.battery-saver .icon {
+  animation: none !important;
+}
+
+.tray-icons .airplane-icon {
+  display: none;
+}
+body.airplane-mode .tray-icons .wifi-icon {
+  display: none;
+}
+body.airplane-mode .tray-icons .airplane-icon {
+  display: block;
+}
+
 #boot {
   position: fixed;
   inset: 0;

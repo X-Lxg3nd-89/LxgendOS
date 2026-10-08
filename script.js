@@ -43,6 +43,16 @@ var alarms = [];
 var browserHistory = [null];
 var browserHistIndex = 0;
 
+var qsState = {
+  wifi: true,
+  bt: true,
+  air: false,
+  night: false,
+  battery: false
+};
+var preAirWifi = true;
+var preAirBt = true;
+
 function updateBootTime() {
   var d = new Date();
   var h = d.getHours();
@@ -546,8 +556,55 @@ function closeQuickSettings() {
   document.getElementById('quick-settings').classList.remove('open');
 }
 
-function toggleTile(el) { el.classList.toggle('active'); }
-function setBrightness(v) { document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85; }
+function toggleTile(type) {
+  var tile = document.getElementById('qs-' + type);
+  if (!tile || tile.classList.contains('disabled')) return;
+
+  qsState[type] = !qsState[type];
+  tile.classList.toggle('active', qsState[type]);
+
+  if (type === 'air') {
+    if (qsState.air) {
+      preAirWifi = qsState.wifi;
+      preAirBt = qsState.bt;
+      qsState.wifi = false;
+      qsState.bt = false;
+      document.getElementById('qs-wifi').classList.remove('active');
+      document.getElementById('qs-bt').classList.remove('active');
+      document.getElementById('qs-wifi').classList.add('disabled');
+      document.getElementById('qs-bt').classList.add('disabled');
+      document.body.classList.add('airplane-mode');
+    } else {
+      qsState.wifi = preAirWifi;
+      qsState.bt = preAirBt;
+      document.getElementById('qs-wifi').classList.toggle('active', qsState.wifi);
+      document.getElementById('qs-bt').classList.toggle('active', qsState.bt);
+      document.getElementById('qs-wifi').classList.remove('disabled');
+      document.getElementById('qs-bt').classList.remove('disabled');
+      document.body.classList.remove('airplane-mode');
+    }
+  }
+
+  if (type === 'night') {
+    document.getElementById('night-overlay').classList.toggle('on', qsState.night);
+  }
+
+  if (type === 'battery') {
+    document.body.classList.toggle('battery-saver', qsState.battery);
+    if (qsState.battery) {
+      document.getElementById('dim-overlay').style.opacity = 0.35;
+    } else {
+      var slider = document.querySelector('.qs-slider input[type="range"]');
+      setBrightness(slider ? slider.value : 100);
+    }
+  }
+}
+
+function setBrightness(v) {
+  if (qsState.battery) return;
+  document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85;
+}
+
 function setVolume(v) { }
 
 function renderStartApps(filter) {
@@ -1257,6 +1314,8 @@ renderStartApps('');
 shellInit();
 paintInit();
 renderAlarms();
+document.getElementById('qs-wifi').classList.add('active');
+document.getElementById('qs-bt').classList.add('active');
 
 setInterval(updateClock, 1000);
 
