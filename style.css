@@ -791,7 +791,7 @@ body.booted .tray { opacity: 1; transform: none; }
 .tray-time .t { font-weight: 600; }
 .tray-time .d { font-size: 11px; color: var(--text-dim); }
 
-/* quick settings */
+/* quick settings / Control centre wwhatever */
 .quick-settings {
   position: absolute;
   right: 12px;
@@ -1054,7 +1054,7 @@ body.booted .tray { opacity: 1; transform: none; }
 body.battery-saver .window { transition: none !important; }
 body.battery-saver .icon { animation-play-state: paused !important; }
 
-/* airplane mode swaps the wifi icon */
+/* airplane mode disable wwifi */
 .tray-icons .airplane-icon { display: none; }
 body.airplane-mode .tray-icons .wifi-icon { display: none; }
 body.airplane-mode .tray-icons .airplane-icon { display: block; }

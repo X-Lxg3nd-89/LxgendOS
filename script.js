@@ -21,7 +21,7 @@ var dragTarget = null;
 var dragX = 0, dragY = 0;
 var resizeTarget = null;
 var rsX = 0, rsY = 0, rsW = 0, rsH = 0;
-var gridSize = 100;
+var gridSize = 100; /* 100 seems to be the sweet spot.*/
 var gridPadding = 20;
 var iconPositions = {};
 var selectedIcon = null;
@@ -35,11 +35,13 @@ var ivZoomLevel = 1;
 var paintCtx = null;
 var paintDrawing = false;
 var paintCurrentTool = 'brush';
+
 var timerInterval = null;
-var timerRemaining = 0;
+var timerRemaining = 0; 
 var swInterval = null;
 var swSeconds = 0;
 var alarms = [];
+
 var browserHistory = [null];
 var browserHistIndex = 0;
 
@@ -429,7 +431,7 @@ function updateTaskbar() {
       if (!document.getElementById('tb-' + id)) {
         (function (appId) {
           var btn = document.createElement('button');
-          btn.id = 'tb-' + appId;
+          btn.id = 'tb-' + appId; 
           btn.className = 'tb-dynamic';
           btn.dataset.appId = appId;
           btn.title = APPS[appId].name;
@@ -604,7 +606,7 @@ function setBrightness(v) {
   if (qsState.battery) return;
   document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85;
 }
-
+/* why are you checking here ???*/
 function setVolume(v) { }
 
 function renderStartApps(filter) {
@@ -972,7 +974,7 @@ function shellRun(cmd) {
     shellWrite('  boot          — return to boot screen');
   } else if (c === 'ver') {
     shellWrite('LxgendOS Shell v1.0');
-    shellWrite('Build: lxg-2025');
+    shellWrite('Build: lxg-2026');
   } else if (c === 'whoami') {
     shellWrite('user');
   } else if (c === 'pwd') {

@@ -1,6 +1,6 @@
 # LxgendOS
 
-A Simple Operating System that runs in your own Browser and includes multiple features and apps into a modern UI.
+A Simple Operating System that runs in your own Browser and includes multiple features, smooth animations and apps into a modern UI.
 
 
 ![alt text](<Screenshot 2026-10-07 at 22-06-55 LxgendOS.png>)
