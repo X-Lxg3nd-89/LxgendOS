@@ -1,4 +1,3 @@
-/* loading screen */
 #loading {
   position: fixed;
   inset: 0;
@@ -34,12 +33,13 @@
 .loading-bar::after {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0;
   background: #fff;
-  transform-origin: left;
-  transform: scaleX(0);
-  animation: loadFill 2s ease-in-out forwards;
   border-radius: 3px;
+  animation: loadFill 2s ease-in-out forwards;
 }
 @keyframes loadFill {
   to { width: 100%; }
