@@ -56,7 +56,6 @@ body {
   overflow: hidden;
 }
 
-/* inputs/buttons ignore the body font otherwise */
 button, input, textarea, select { font-family: inherit; }
 
 #bg-layer {
@@ -66,6 +65,54 @@ button, input, textarea, select { font-family: inherit; }
   background: url('BGs/bg1.jpg') center/cover no-repeat var(--bg);
   transition: background-image .4s, background-color .4s;
 }
+
+/* loading screen */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background: #0d0518;
+  transition: opacity .6s ease-out, visibility .6s;
+}
+#loading.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.loading-text {
+  font-family: 'Korataki', 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 72px;
+  letter-spacing: 4px;
+  color: #a855f7;
+  text-shadow: 0 0 40px rgba(168, 85, 247, 0.6), 0 0 80px rgba(168, 85, 247, 0.3);
+  animation: loadingPulse 2s ease-in-out infinite;
+}
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+.loading-bar {
+  width: 240px;
+  height: 4px;
+  background: rgba(168, 85, 247, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loading-fill {
+  height: 100%;
+  width: 0%;
+  background: #a855f7;
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.8);
+  transition: width 2s ease-in-out;
+}
+#loading.active .loading-fill { width: 100%; }
 
 /* boot / lock screen */
 #boot {
@@ -165,7 +212,6 @@ body.booted .icon {
   text-shadow: 0 1px 2px rgba(0,0,0,.8);
 }
 
-/* svg icons, .acc = fill, .acc-stroke = stroke */
 .ic svg, .sa-icon svg { width: 100%; height: 100%; }
 .ic svg .acc, .title-left svg .acc, .taskbar button svg .acc,
 .sa-icon svg .acc, .fe-icon svg .acc { fill: var(--accent); }
@@ -209,7 +255,20 @@ body.booted .icon {
   pointer-events: none;
   transition: opacity .3s ease-in, transform .35s ease-in;
 }
-.window.instant { transition: none !important; } /* while dragging/resizing */
+.window.instant { transition: none !important; }
+
+/* snap preview overlay */
+.snap-preview {
+  position: fixed;
+  z-index: 99;
+  background: var(--highlight);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s, left .15s, top .15s, width .15s, height .15s;
+}
+.snap-preview.show { opacity: 1; }
 
 .win-title {
   display: flex;
@@ -252,7 +311,6 @@ body.booted .icon {
   opacity: .5;
 }
 
-/* toolbars, same look in a bunch of apps */
 .notepad-toolbar, .iv-toolbar, .paint-toolbar, .browser-toolbar, .fe-toolbar {
   display: flex;
   align-items: center;
@@ -275,7 +333,6 @@ body.booted .icon {
 .notepad-toolbar button:hover, .iv-toolbar button:hover, .paint-toolbar button:hover,
 .browser-toolbar button:hover, .fe-btn:hover { background: var(--btn-hover); }
 
-/* calc */
 .calculator { width: 320px; }
 .calc-screen { padding: 20px 16px; font-size: 36px; font-weight: 300; text-align: right; }
 .calc-buttons {
@@ -298,7 +355,6 @@ body.booted .icon {
 .calc-buttons .accent { background: var(--accent); color: #fff; }
 .calc-buttons .accent:hover { background: var(--accent-hover); }
 
-/* notepad */
 .notepad { width: 500px; height: 400px; }
 .notepad-toolbar button { display: flex; align-items: center; gap: 5px; font-weight: 500; }
 .notepad-toolbar button svg { width: 12px; height: 12px; }
@@ -315,7 +371,6 @@ body.booted .icon {
   resize: none;
 }
 
-/* personalize */
 .themeapp { width: 460px; }
 .theme-body {
   display: flex;
@@ -422,7 +477,6 @@ body.booted .icon {
 body.light .mt-track { background: var(--accent); }
 body.light .mt-track::after { transform: translateX(16px); }
 
-/* files */
 .fileexplorer { width: 700px; height: 480px; }
 .fe-toolbar { gap: 8px; padding: 10px 12px; }
 .fe-btn { display: flex; align-items: center; gap: 4px; padding: 6px 10px; font-size: 13px; }
@@ -458,7 +512,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 .fe-list::-webkit-scrollbar-track { background: transparent; }
 .fe-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
-/* terminal */
 .shellapp { width: 620px; height: 400px; background: #0a0a0a; }
 .shellapp .win-title { background: #1a1a1a; }
 .shell-body {
@@ -482,7 +535,6 @@ body.light .mt-track::after { transform: translateX(16px); }
   caret-color: var(--accent);
 }
 
-/* clock */
 .clockapp { width: 420px; height: 440px; }
 .clock-tabs { display: flex; flex-shrink: 0; background: var(--win-title); border-bottom: 1px solid var(--win-border); }
 .clock-tab {
@@ -546,7 +598,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 }
 .alarm-item button { padding: 4px 8px; color: #ff5f57; background: none; border: none; border-radius: 4px; cursor: pointer; }
 
-/* image viewer */
 .imageviewer { width: 640px; height: 520px; }
 .iv-toolbar button { font-size: 13px; }
 .iv-zoom-label { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--text-dim); }
@@ -560,7 +611,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 }
 .iv-canvas-wrap img { max-width: none; transform-origin: center; transition: transform .15s; }
 
-/* paint */
 .paintapp { width: 720px; height: 560px; }
 .paint-toolbar { gap: 8px; flex-wrap: wrap; }
 .paint-toolbar button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
@@ -578,7 +628,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 .paint-canvas-wrap { position: relative; flex: 1; overflow: hidden; background: white; }
 .paint-canvas-wrap canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
-/* store */
 .storeapp { width: 720px; height: 520px; }
 .store-header { padding: 16px 18px 10px; flex-shrink: 0; }
 .store-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
@@ -628,7 +677,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 }
 .sc-btn.installed { background: var(--btn-hover); color: var(--text-dim); cursor: default; }
 
-/* browser */
 .browserapp { width: 900px; height: 600px; }
 .browser-toolbar button { min-width: 32px; padding: 6px 10px; font-size: 14px; }
 .browser-url {
@@ -693,7 +741,6 @@ body.light .mt-track::after { transform: translateX(16px); }
 }
 .bh-links button:hover { background: var(--btn-hover); border-color: var(--accent); transform: translateY(-1px); }
 
-/* taskbar */
 .taskbar {
   position: absolute;
   bottom: 12px;
@@ -734,7 +781,6 @@ body.booted .taskbar { opacity: 1; transform: translateX(-50%); }
 .taskbar button:active { transform: scale(.9); }
 .taskbar button svg { width: 22px; height: 22px; }
 
-/* little bar under running apps */
 .taskbar button.running::after {
   content: '';
   position: absolute;
@@ -791,7 +837,10 @@ body.booted .tray { opacity: 1; transform: none; }
 .tray-time .t { font-weight: 600; }
 .tray-time .d { font-size: 11px; color: var(--text-dim); }
 
-/* quick settings / Control centre wwhatever */
+.tray-icons .airplane-icon { display: none; }
+body.airplane-mode .tray-icons .wifi-icon { display: none; }
+body.airplane-mode .tray-icons .airplane-icon { display: block; }
+
 .quick-settings {
   position: absolute;
   right: 12px;
@@ -829,6 +878,7 @@ body.booted .tray { opacity: 1; transform: none; }
 .qs-tile:hover { background: var(--btn-hover); }
 .qs-tile:active { transform: scale(.95); }
 .qs-tile.active { background: var(--accent); border-color: var(--accent-hover); color: white; }
+.qs-tile.disabled { opacity: .4; pointer-events: none; }
 .qs-icon { width: 20px; height: 20px; }
 .qs-icon svg { width: 100%; height: 100%; fill: currentColor; }
 .qs-label { font-size: 11px; font-weight: 600; }
@@ -861,7 +911,6 @@ body.booted .tray { opacity: 1; transform: none; }
 .qs-footer .power:hover { background: var(--btn-hover); }
 .qs-footer .power svg { width: 16px; height: 16px; fill: var(--text); }
 
-/* start */
 .start-menu {
   position: absolute;
   bottom: 80px;
@@ -927,7 +976,6 @@ body.booted .tray { opacity: 1; transform: none; }
 .sa-label { font-size: 11px; font-weight: 500; text-align: center; }
 .start-empty { grid-column: 1 / -1; padding: 30px 0; text-align: center; font-size: 13px; color: var(--text-dim); }
 
-/* right click */
 .ctx-menu {
   display: none;
   position: absolute;
@@ -947,7 +995,42 @@ body.booted .tray { opacity: 1; transform: none; }
 .ctx-item:hover { background: var(--btn-hover); }
 .ctx-sep { height: 1px; margin: 4px 6px; background: var(--popup-border); }
 
-/* save as */
+/* toast notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  min-width: 260px;
+  max-width: 340px;
+  padding: 14px 18px;
+  color: var(--text);
+  background: var(--popup-bg);
+  border: 1px solid var(--popup-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.6);
+  font-size: 13px;
+  pointer-events: auto;
+  animation: toastIn .35s cubic-bezier(.34,1.56,.64,1);
+}
+.toast.fade-out { animation: toastOut .3s ease-in forwards; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(60px) scale(.9); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(60px) scale(.95); }
+}
+.toast-title { font-weight: 600; margin-bottom: 2px; }
+.toast-body { color: var(--text-dim); font-size: 12px; }
+
 .save-dialog {
   position: fixed;
   inset: 0;
@@ -1024,9 +1107,6 @@ body.booted .tray { opacity: 1; transform: none; }
 .save-footer button:hover { background: var(--btn-hover); }
 .save-footer button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* ---- stuff added later ---- */
-
-/* dim + night light from quick settings */
 #dim-overlay {
   position: fixed;
   inset: 0;
@@ -1048,15 +1128,5 @@ body.booted .tray { opacity: 1; transform: none; }
 }
 #night-overlay.on { opacity: .22; }
 
-.qs-tile.disabled { opacity: .4; pointer-events: none; }
-
-/* battery saver kills animations */
 body.battery-saver .window { transition: none !important; }
 body.battery-saver .icon { animation-play-state: paused !important; }
-
-/* airplane mode disable wwifi */
-.tray-icons .airplane-icon { display: none; }
-body.airplane-mode .tray-icons .wifi-icon { display: none; }
-body.airplane-mode .tray-icons .airplane-icon { display: block; }
-
-/* TODO: tidy this file up at some point */

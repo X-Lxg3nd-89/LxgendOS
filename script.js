@@ -19,9 +19,13 @@ var openWindows = {};
 var minimizedWindows = {};
 var dragTarget = null;
 var dragX = 0, dragY = 0;
+var dragStartLeft = 0, dragStartTop = 0;
+var dragStartW = 0, dragStartH = 0;
+var dragStartX = 0, dragStartY = 0;
+var snapZone = null;
 var resizeTarget = null;
 var rsX = 0, rsY = 0, rsW = 0, rsH = 0;
-var gridSize = 100; /* 100 seems to be the sweet spot.*/
+var gridSize = 100;
 var gridPadding = 20;
 var iconPositions = {};
 var selectedIcon = null;
@@ -37,7 +41,7 @@ var paintDrawing = false;
 var paintCurrentTool = 'brush';
 
 var timerInterval = null;
-var timerRemaining = 0; 
+var timerRemaining = 0;
 var swInterval = null;
 var swSeconds = 0;
 var alarms = [];
@@ -54,6 +58,107 @@ var qsState = {
 };
 var preAirWifi = true;
 var preAirBt = true;
+
+var storageKey = 'lxgendos-state-v1';
+
+function saveState() {
+  try {
+    var state = {
+      fs: feFS,
+      wallpaper: document.getElementById('bg-layer').style.backgroundImage || '',
+      bgColor: document.getElementById('bg-layer').style.backgroundColor || '',
+      accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+      accentHover: getComputedStyle(document.documentElement).getPropertyValue('--accent-hover').trim(),
+      light: document.body.classList.contains('light'),
+      iconPositions: iconPositions,
+      qsState: qsState,
+      preAirWifi: preAirWifi,
+      preAirBt: preAirBt,
+      windowPositions: {}
+    };
+    for (var id in openWindows) {
+      var w = document.getElementById('win-' + id);
+      if (!w) continue;
+      state.windowPositions[id] = {
+        left: w.style.left, top: w.style.top,
+        width: w.style.width, height: w.style.height
+      };
+    }
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch (e) { /* quota or private mode */ }
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+function applySavedState() {
+  var s = loadState();
+  if (!s) return;
+
+  if (s.fs) feFS = s.fs;
+  if (s.wallpaper && s.wallpaper !== 'none') {
+    document.getElementById('bg-layer').style.backgroundImage = s.wallpaper;
+  }
+  if (s.bgColor && s.bgColor !== 'rgba(0, 0, 0, 0)') {
+    document.getElementById('bg-layer').style.backgroundColor = s.bgColor;
+  }
+  if (s.accent) {
+    document.documentElement.style.setProperty('--accent', s.accent);
+    document.documentElement.style.setProperty('--accent-hover', s.accentHover || s.accent);
+  }
+  if (s.light) document.body.classList.add('light');
+  if (s.iconPositions) iconPositions = s.iconPositions;
+  if (s.qsState) {
+    qsState = s.qsState;
+    if (qsState.air) document.body.classList.add('airplane-mode');
+    if (qsState.night) document.getElementById('night-overlay').classList.add('on');
+    if (qsState.battery) {
+      document.body.classList.add('battery-saver');
+      document.getElementById('dim-overlay').style.opacity = 0.35;
+    }
+    if (!qsState.wifi) document.getElementById('qs-wifi').classList.remove('active');
+    if (!qsState.bt) document.getElementById('qs-bt').classList.remove('active');
+    if (qsState.air) {
+      document.getElementById('qs-air').classList.add('active');
+      document.getElementById('qs-wifi').classList.add('disabled');
+      document.getElementById('qs-bt').classList.add('disabled');
+      document.getElementById('qs-wifi').classList.remove('active');
+      document.getElementById('qs-bt').classList.remove('active');
+    }
+    if (qsState.night) document.getElementById('qs-night').classList.add('active');
+    if (qsState.battery) document.getElementById('qs-battery').classList.add('active');
+  }
+  if (s.preAirWifi !== undefined) preAirWifi = s.preAirWifi;
+  if (s.preAirBt !== undefined) preAirBt = s.preAirBt;
+  if (s.windowPositions) {
+    for (var id in s.windowPositions) {
+      var w = document.getElementById('win-' + id);
+      if (!w) continue;
+      var p = s.windowPositions[id];
+      if (p.left) w.style.left = p.left;
+      if (p.top) w.style.top = p.top;
+      if (p.width) w.style.width = p.width;
+      if (p.height) w.style.height = p.height;
+    }
+  }
+}
+
+function showToast(title, body) {
+  var container = document.getElementById('toast-container');
+  var toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = '<div class="toast-title">' + title + '</div>' + (body ? '<div class="toast-body">' + body + '</div>' : '');
+  container.appendChild(toast);
+  setTimeout(function () {
+    toast.classList.add('fade-out');
+    setTimeout(function () { toast.remove(); }, 320);
+  }, 3000);
+}
 
 function updateBootTime() {
   var d = new Date();
@@ -73,6 +178,7 @@ function dismissBoot() {
 }
 
 function powerOff() {
+  saveState();
   closeQuickSettings();
   closeStartMenu();
   document.querySelectorAll('.window.open, .window.minimized').forEach(function (w) {
@@ -138,6 +244,14 @@ function renderDesktopIcons() {
         selectedIcon = null;
         openWin(appId, el);
       });
+      el.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (selectedIcon && selectedIcon !== el) selectedIcon.classList.remove('selected');
+        el.classList.add('selected');
+        selectedIcon = el;
+        showIconContextMenu(e.clientX, e.clientY, appId);
+      });
       makeIconDraggable(el, appId);
     })(id, div);
 
@@ -177,6 +291,7 @@ function makeIconDraggable(el, id) {
     el.style.left = snappedX + 'px';
     el.style.top = snappedY + 'px';
     iconPositions[id] = { x: snappedX, y: snappedY };
+    saveState();
   });
 }
 
@@ -236,10 +351,7 @@ function openWin(id, sourceEl) {
 }
 
 function resetCalc() {
-  current = "0";
-  prev = null;
-  op = null;
-  reset = false;
+  current = "0"; prev = null; op = null; reset = false;
   updateScreen();
 }
 
@@ -307,6 +419,7 @@ function closeWin(id) {
   delete openWindows[id];
   delete minimizedWindows[id];
   updateTaskbar();
+  saveState();
 
   if (id === 'calc') resetCalc();
   else if (id === 'notepad') resetNotepad();
@@ -329,6 +442,7 @@ function minWin(id) {
   delete openWindows[id];
   minimizedWindows[id] = true;
   updateTaskbar();
+  saveState();
 }
 
 function maxWin(id) {
@@ -353,6 +467,7 @@ function maxWin(id) {
     w.style.top = '20px';
     w.dataset.max = "1";
   }
+  saveState();
 }
 
 function startDrag(e, id) {
@@ -364,6 +479,12 @@ function startDrag(e, id) {
   dragTarget.style.zIndex = ++zTop;
   dragX = e.clientX - rect.left;
   dragY = e.clientY - rect.top;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragStartLeft = rect.left;
+  dragStartTop = rect.top;
+  dragStartW = rect.width;
+  dragStartH = rect.height;
   document.addEventListener("mousemove", doDrag);
   document.addEventListener("mouseup", endDrag);
 }
@@ -372,13 +493,83 @@ function doDrag(e) {
   if (!dragTarget) return;
   dragTarget.style.left = (e.clientX - dragX) + "px";
   dragTarget.style.top = (e.clientY - dragY) + "px";
+
+  // snap zone detection
+  var edge = 30;
+  var zone = null;
+  if (e.clientX < edge) zone = 'left';
+  else if (e.clientX > window.innerWidth - edge) zone = 'right';
+  else if (e.clientY < edge) zone = 'max';
+
+  if (zone !== snapZone) {
+    snapZone = zone;
+    showSnapPreview(zone);
+  }
 }
 
-function endDrag() {
-  if (dragTarget) dragTarget.style.transition = '';
+function showSnapPreview(zone) {
+  var preview = document.getElementById('snap-preview');
+  if (!preview) {
+    preview = document.createElement('div');
+    preview.id = 'snap-preview';
+    preview.className = 'snap-preview';
+    document.body.appendChild(preview);
+  }
+  if (!zone) {
+    preview.classList.remove('show');
+    return;
+  }
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  var left, top, width, height;
+  if (zone === 'left') { left = 10; top = 10; width = w / 2 - 15; height = h - 90; }
+  else if (zone === 'right') { left = w / 2 + 5; top = 10; width = w / 2 - 15; height = h - 90; }
+  else if (zone === 'max') { left = 10; top = 10; width = w - 20; height = h - 90; }
+  preview.style.left = left + 'px';
+  preview.style.top = top + 'px';
+  preview.style.width = width + 'px';
+  preview.style.height = height + 'px';
+  preview.classList.add('show');
+}
+
+function endDrag(e) {
+  if (!dragTarget) {
+    dragTarget = null;
+    document.removeEventListener("mousemove", doDrag);
+    document.removeEventListener("mouseup", endDrag);
+    return;
+  }
+
+  var preview = document.getElementById('snap-preview');
+  if (snapZone && preview) {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    var left, top, width, height;
+    if (snapZone === 'left') { left = 10; top = 10; width = w / 2 - 15; height = h - 90; }
+    else if (snapZone === 'right') { left = w / 2 + 5; top = 10; width = w / 2 - 15; height = h - 90; }
+    else if (snapZone === 'max') { left = 10; top = 10; width = w - 20; height = h - 90; }
+
+    dragTarget.dataset.origW = dragStartW + 'px';
+    dragTarget.dataset.origH = dragStartH + 'px';
+    dragTarget.dataset.origL = dragStartLeft + 'px';
+    dragTarget.dataset.origT = dragStartTop + 'px';
+    dragTarget.dataset.max = snapZone === 'max' ? '1' : '0';
+
+    dragTarget.style.left = left + 'px';
+    dragTarget.style.top = top + 'px';
+    dragTarget.style.width = width + 'px';
+    dragTarget.style.height = height + 'px';
+    showToast('Window snapped', snapZone === 'max' ? 'Maximized' : 'Snapped ' + snapZone);
+  }
+
+  if (preview) preview.classList.remove('show');
+  snapZone = null;
+
+  dragTarget.style.transition = '';
   dragTarget = null;
   document.removeEventListener("mousemove", doDrag);
   document.removeEventListener("mouseup", endDrag);
+  saveState();
 }
 
 function startResize(e, id) {
@@ -387,10 +578,8 @@ function startResize(e, id) {
   resizeTarget = w;
   resizeTarget.style.zIndex = ++zTop;
   var rect = w.getBoundingClientRect();
-  rsX = e.clientX;
-  rsY = e.clientY;
-  rsW = rect.width;
-  rsH = rect.height;
+  rsX = e.clientX; rsY = e.clientY;
+  rsW = rect.width; rsH = rect.height;
   e.preventDefault();
   e.stopPropagation();
   document.addEventListener("mousemove", doResize);
@@ -412,6 +601,7 @@ function endResize() {
   resizeTarget = null;
   document.removeEventListener("mousemove", doResize);
   document.removeEventListener("mouseup", endResize);
+  saveState();
 }
 
 function updateTaskbar() {
@@ -431,7 +621,7 @@ function updateTaskbar() {
       if (!document.getElementById('tb-' + id)) {
         (function (appId) {
           var btn = document.createElement('button');
-          btn.id = 'tb-' + appId; 
+          btn.id = 'tb-' + appId;
           btn.className = 'tb-dynamic';
           btn.dataset.appId = appId;
           btn.title = APPS[appId].name;
@@ -492,13 +682,7 @@ function calculate() {
   updateScreen();
 }
 
-function clearScreen() {
-  current = "0";
-  prev = null;
-  op = null;
-  reset = false;
-  updateScreen();
-}
+function clearScreen() { current = "0"; prev = null; op = null; reset = false; updateScreen(); }
 
 function backspace() {
   if (reset) { current = "0"; reset = false; }
@@ -519,6 +703,7 @@ function setBg(value, el) {
   }
   document.querySelectorAll(".bg-thumb, .color-swatch").forEach(function (t) { t.classList.remove("selected"); });
   if (el) el.classList.add("selected");
+  saveState();
 }
 
 function importBg(e) {
@@ -533,6 +718,7 @@ function importBg(e) {
     thumb.onclick = function () { setBg(dataUrl, thumb); };
     document.getElementById('theme-grid').appendChild(thumb);
     setBg(dataUrl, thumb);
+    showToast('Wallpaper imported', file.name);
   };
   reader.readAsDataURL(file);
 }
@@ -542,10 +728,12 @@ function setAccent(color, hover, el) {
   document.documentElement.style.setProperty('--accent-hover', hover);
   document.querySelectorAll('.accent-swatch').forEach(function (s) { s.classList.remove('selected'); });
   if (el) el.classList.add('selected');
+  saveState();
 }
 
 function toggleMode() {
   document.body.classList.toggle('light');
+  saveState();
 }
 
 function toggleQuickSettings(e) {
@@ -576,6 +764,7 @@ function toggleTile(type) {
       document.getElementById('qs-wifi').classList.add('disabled');
       document.getElementById('qs-bt').classList.add('disabled');
       document.body.classList.add('airplane-mode');
+      showToast('Airplane mode', 'Wi-Fi and Bluetooth turned off');
     } else {
       qsState.wifi = preAirWifi;
       qsState.bt = preAirBt;
@@ -584,6 +773,7 @@ function toggleTile(type) {
       document.getElementById('qs-wifi').classList.remove('disabled');
       document.getElementById('qs-bt').classList.remove('disabled');
       document.body.classList.remove('airplane-mode');
+      showToast('Airplane mode off', 'Wi-Fi restored');
     }
   }
 
@@ -595,18 +785,22 @@ function toggleTile(type) {
     document.body.classList.toggle('battery-saver', qsState.battery);
     if (qsState.battery) {
       document.getElementById('dim-overlay').style.opacity = 0.35;
+      showToast('Battery saver on', 'Screen dimmed, animations disabled');
     } else {
       var slider = document.querySelector('.qs-slider input[type="range"]');
       setBrightness(slider ? slider.value : 100);
+      showToast('Battery saver off', '');
     }
   }
+
+  saveState();
 }
 
 function setBrightness(v) {
   if (qsState.battery) return;
   document.getElementById('dim-overlay').style.opacity = (100 - v) / 100 * 0.85;
 }
-/* why are you checking here ???*/
+
 function setVolume(v) { }
 
 function renderStartApps(filter) {
@@ -658,6 +852,51 @@ function closeStartMenu() {
   document.getElementById('start-menu').classList.remove('open');
 }
 
+function showIconContextMenu(x, y, appId) {
+  var menu = document.getElementById('ctx-menu');
+  menu.innerHTML = '';
+  addCtxItem(menu, 'Open', function () { openWin(appId); });
+  addCtxItem(menu, 'Open in new position', function () {
+    var w = document.getElementById('win-' + appId);
+    if (w) {
+      w.style.left = (Math.random() * (window.innerWidth - 400)) + 'px';
+      w.style.top = (Math.random() * (window.innerHeight - 300)) + 'px';
+    }
+    openWin(appId);
+  });
+  menu.appendChild(document.createElement('div')).className = 'ctx-sep';
+  addCtxItem(menu, 'Reset position', function () {
+    iconPositions[appId] = null;
+    renderDesktopIcons();
+    saveState();
+  });
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('open');
+}
+
+function showDesktopContextMenu(x, y) {
+  var menu = document.getElementById('ctx-menu');
+  menu.innerHTML = '';
+  addCtxItem(menu, 'Change wallpaper', function () { openWin('theme'); });
+  addCtxItem(menu, 'Open Files', function () { openWin('fileexplorer'); });
+  addCtxItem(menu, 'Open Shell', function () { openWin('shell'); });
+  menu.appendChild(document.createElement('div')).className = 'ctx-sep';
+  addCtxItem(menu, 'Refresh', function () { renderDesktopIcons(); showToast('Desktop refreshed', ''); });
+  addCtxItem(menu, 'About LxgendOS', function () { showToast('LxgendOS v1.0', 'A web desktop by ghst'); });
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('open');
+}
+
+function addCtxItem(menu, label, handler) {
+  var item = document.createElement('div');
+  item.className = 'ctx-item';
+  item.textContent = label;
+  item.onclick = function () { handler(); menu.classList.remove('open'); };
+  menu.appendChild(item);
+}
+
 document.addEventListener('click', function (e) {
   var qs = document.getElementById('quick-settings');
   var tray = document.querySelector('.tray');
@@ -683,11 +922,9 @@ document.addEventListener('click', function (e) {
 
 document.addEventListener('contextmenu', function (e) {
   if (e.target.closest('.window')) return;
+  if (e.target.closest('.icon')) return;
   e.preventDefault();
-  var ctx = document.getElementById('ctx-menu');
-  ctx.style.left = e.clientX + 'px';
-  ctx.style.top = e.clientY + 'px';
-  ctx.classList.add('open');
+  showDesktopContextMenu(e.clientX, e.clientY);
 });
 
 var feFS = {
@@ -797,6 +1034,37 @@ function feRender() {
         openNotepadFile(name, child.content);
       }
     });
+    div.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var menu = document.getElementById('ctx-menu');
+      menu.innerHTML = '';
+      addCtxItem(menu, 'Open', function () {
+        div.dispatchEvent(new Event('dblclick'));
+      });
+      addCtxItem(menu, 'Delete', function () {
+        if (confirm('Delete ' + name + '?')) {
+          delete children[name];
+          feRender();
+          saveState();
+          showToast('Deleted', name);
+        }
+      });
+      if (child.type === 'file') {
+        addCtxItem(menu, 'Rename', function () {
+          var newName = prompt('New name:', name);
+          if (newName && newName !== name) {
+            children[newName] = children[name];
+            delete children[name];
+            feRender();
+            saveState();
+          }
+        });
+      }
+      menu.style.left = e.clientX + 'px';
+      menu.style.top = e.clientY + 'px';
+      menu.classList.add('open');
+    });
     list.appendChild(div);
   });
 
@@ -875,6 +1143,8 @@ function saveNotepad() {
     var node = feGetNode(notepadCurrentFile.folder);
     if (node && node.children && node.children[notepadCurrentFile.name]) {
       node.children[notepadCurrentFile.name].content = document.getElementById('notepad-text').value;
+      saveState();
+      showToast('Saved', notepadCurrentFile.name);
       return;
     }
   }
@@ -918,6 +1188,8 @@ function confirmSave() {
   notepadCurrentFile = { name: name, folder: folder };
   document.getElementById('notepad-title').innerText = 'Notepad - ' + name;
   closeSaveDialog();
+  saveState();
+  showToast('Saved', name);
   if (document.getElementById('win-fileexplorer').classList.contains('open')) feRender();
 }
 
@@ -971,6 +1243,7 @@ function shellRun(cmd) {
     shellWrite('  date          — show today');
     shellWrite('  time          — show now');
     shellWrite('  clear         — clear screen');
+    shellWrite('  reset         — wipe all saved data');
     shellWrite('  boot          — return to boot screen');
   } else if (c === 'ver') {
     shellWrite('LxgendOS Shell v1.0');
@@ -1022,6 +1295,11 @@ function shellRun(cmd) {
       if (d.id !== 'shell-input-line') d.remove();
     });
     return;
+  } else if (c === 'reset') {
+    localStorage.removeItem(storageKey);
+    shellWrite('All saved data cleared.');
+    showToast('Data cleared', 'Refresh to start fresh');
+    return;
   } else if (c === 'boot') {
     powerOff();
     return;
@@ -1066,7 +1344,7 @@ function timerToggle() {
       clearInterval(timerInterval);
       timerInterval = null;
       document.getElementById('timer-start').innerText = 'Start';
-      alert('Timer done!');
+      showToast('Timer done!', 'Time is up');
     }
   }, 1000);
 }
@@ -1223,6 +1501,7 @@ function paintSave() {
   a.href = url;
   a.download = 'lxgend-paint.png';
   a.click();
+  showToast('Paint saved', 'Check your downloads');
 }
 
 var storeApps = [
@@ -1309,15 +1588,27 @@ function browserReload() {
   }
 }
 
+// ---- startup ----
 updateBootTime();
+applySavedState();
 updateClock();
 renderDesktopIcons();
 renderStartApps('');
 shellInit();
 paintInit();
 renderAlarms();
-document.getElementById('qs-wifi').classList.add('active');
-document.getElementById('qs-bt').classList.add('active');
+if (!qsState.wifi) document.getElementById('qs-wifi').classList.remove('active');
+if (!qsState.bt) document.getElementById('qs-bt').classList.remove('active');
+
+var loadingEl = document.getElementById('loading');
+var bootEl = document.getElementById('boot');
+bootEl.style.visibility = 'hidden';
+setTimeout(function () { loadingEl.classList.add('active'); }, 100);
+setTimeout(function () {
+  loadingEl.classList.add('hidden');
+  bootEl.style.visibility = '';
+  setTimeout(function () { loadingEl.style.display = 'none'; }, 700);
+}, 2200);
 
 setInterval(updateClock, 1000);
 
@@ -1337,7 +1628,12 @@ setInterval(function () {
   for (var i = 0; i < alarms.length; i++) {
     if (alarms[i].time === timeStr && !alarms[i].fired) {
       alarms[i].fired = true;
-      alert('Alarm! ' + alarms[i].time);
+      showToast('Alarm!', alarms[i].time);
     }
   }
 }, 1000);
+
+// autosave on any window focus
+document.addEventListener('mouseup', function () {
+  setTimeout(saveState, 200);
+});
