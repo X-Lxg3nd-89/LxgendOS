@@ -25,10 +25,11 @@
 }
 .loading-bar {
   width: 200px;
-  height: 10px;
+  height: 6px;
   background: #1a1a1a;
   position: relative;
   overflow: hidden;
+  border-radius: 3px;
 }
 .loading-bar::after {
   content: '';
@@ -38,10 +39,8 @@
   transform-origin: left;
   transform: scaleX(0);
   animation: loadFill 2s ease-in-out forwards;
+  border-radius: 3px;
 }
-@keyframes loadFill {
-  to { transform: scaleX(1); }
-} 
 
 /* boot / lock screen */
 #boot {
