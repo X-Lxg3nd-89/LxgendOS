@@ -19,11 +19,11 @@ var feFS = {
       }},
       'Pictures': { type: 'folder', children: {
         'wallpapers': { type: 'folder', children: {
-          'bg1.jpg': { type: 'image', src: 'BGs/bg1.jpg' },
-          'bg2.jpg': { type: 'image', src: 'BGs/bg2.jpg' },
-          'bg3.jpg': { type: 'image', src: 'BGs/bg3.jpg' },
-          'bg4.jpg': { type: 'image', src: 'BGs/bg4.jpg' },
-          'bg5.png': { type: 'image', src: 'BGs/bg5.png' }
+          'bg1.jpg': { type: 'image', src: 'images/BGs/bg1.jpg' },
+          'bg2.jpg': { type: 'image', src: 'images/BGs/bg2.jpg' },
+          'bg3.jpg': { type: 'image', src: 'images/BGs/bg3.jpg' },
+          'bg4.jpg': { type: 'image', src: 'images/BGs/bg4.jpg' },
+          'bg5.png': { type: 'image', src: 'images/BGs/bg5.png' }
         }}
       }},
       'Projects': { type: 'folder', children: { 'lxgendos': { type: 'folder', children: {
