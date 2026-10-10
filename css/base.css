@@ -22,15 +22,14 @@
   --btn-hover: #3a3a3a;
   --taskbar: rgba(24,24,24,.85);
   --taskbar-border: rgba(60,60,60,.6);
-  --accent: #0078d4;
-  --accent-hover: #1a88e0;
+  --accent: #a855f7;
+  --accent-hover: #c084fc;
   --shadow: 0 20px 60px rgba(0,0,0,.8);
   --popup-bg: #202020;
   --popup-border: #2f2f2f;
   --hover: rgba(255,255,255,.06);
-  --highlight: rgba(0,120,212,.25);
+  --highlight: rgba(168, 85, 247, .25);
 }
-
 body.light {
   --bg: #f3f3f3;
   --win-bg: #fff;
