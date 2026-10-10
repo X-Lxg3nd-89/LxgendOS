@@ -397,7 +397,6 @@ function endDrag(e) {
     dragTarget.style.top = top + 'px';
     dragTarget.style.width = width + 'px';
     dragTarget.style.height = height + 'px';
-    showToast('Window snapped', snapZone === 'max' ? 'Maximized' : 'Snapped ' + snapZone);
   }
 
   if (preview) preview.classList.remove('show');
@@ -721,7 +720,7 @@ function showDesktopContextMenu(x, y) {
   addCtxItem(menu, 'Open Shell', function () { openWin('shell'); });
   menu.appendChild(document.createElement('div')).className = 'ctx-sep';
   addCtxItem(menu, 'Refresh', function () { renderDesktopIcons(); showToast('Desktop refreshed', ''); });
-  addCtxItem(menu, 'About LxgendOS', function () { showToast('LxgendOS v1.0', 'A web desktop by ghst'); });
+  addCtxItem(menu, 'About LxgendOS', function () { showToast('LxgendOS v1.0', 'A web desktop by Lxg3nd'); });
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
   menu.classList.add('open');
