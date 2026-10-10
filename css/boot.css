@@ -28,7 +28,7 @@
   background: #1a1a1a;
   position: relative;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 6px;
 }
 .loading-bar::after {
   content: '';
