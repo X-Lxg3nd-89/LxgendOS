@@ -157,5 +157,5 @@ function showToast(title, body) {
   setTimeout(function () {
     toast.classList.add('fade-out');
     setTimeout(function () { toast.remove(); }, 320);
-  }, 3000);
+  }, 10000);
 }
