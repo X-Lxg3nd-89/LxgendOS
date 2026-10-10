@@ -62,7 +62,7 @@ button, input, textarea, select { font-family: inherit; }
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: url('../images/bg1.jpg') center/cover no-repeat var(--bg);
+  background: url('../images/BGs/bg1.jpg') center/cover no-repeat var(--bg);
   transition: background-image .4s, background-color .4s;
 }
 
