@@ -1,0 +1,91 @@
+@font-face {
+  font-family: 'Korataki';
+  src: url('../fonts/korataki_extrabold.otf') format('opentype');
+  font-weight: 800;
+}
+
+* { 
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+:root {
+  --bg: #000;
+  --win-bg: #1c1c1c;
+  --win-title: #2a2a2a;
+  --win-border: #3a3a3a;
+  --text: white;
+  --text-dim: #999;
+  --btn: #2d2d2d;
+  --btn-hover: #3a3a3a;
+  --taskbar: rgba(24,24,24,.85);
+  --taskbar-border: rgba(60,60,60,.6);
+  --accent: #0078d4;
+  --accent-hover: #1a88e0;
+  --shadow: 0 20px 60px rgba(0,0,0,.8);
+  --popup-bg: #202020;
+  --popup-border: #2f2f2f;
+  --hover: rgba(255,255,255,.06);
+  --highlight: rgba(0,120,212,.25);
+}
+
+body.light {
+  --bg: #f3f3f3;
+  --win-bg: #fff;
+  --win-title: #f0f0f0;
+  --win-border: #d0d0d0;
+  --text: black;
+  --text-dim: #555;
+  --btn: #e8e8e8;
+  --btn-hover: #d8d8d8;
+  --taskbar: rgba(255,255,255,.85);
+  --taskbar-border: rgba(200,200,200,.6);
+  --shadow: 0 20px 60px rgba(0,0,0,.2);
+  --popup-bg: #fff;
+  --popup-border: #d0d0d0;
+  --hover: rgba(0,0,0,.05);
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+button, input, textarea, select { font-family: inherit; }
+
+#bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url('../images/bg1.jpg') center/cover no-repeat var(--bg);
+  transition: background-image .4s, background-color .4s;
+}
+
+#dim-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: black;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+}
+#night-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  background: #ffb84d;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+#night-overlay.on { opacity: .22; }
+
+body.battery-saver .window { transition: none !important; }
+body.battery-saver .icon { animation-play-state: paused !important; }

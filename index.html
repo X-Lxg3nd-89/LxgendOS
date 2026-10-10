@@ -6,7 +6,10 @@
 <title>LxgendOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/boot.css">
+<link rel="stylesheet" href="css/ui.css">
+<link rel="stylesheet" href="css/apps.css">
 </head>
 <body>
 
@@ -117,11 +120,11 @@
     <div class="theme-section">
       <div class="theme-label">Wallpaper</div>
       <div class="theme-grid" id="theme-grid">
-        <div class="bg-thumb selected" onclick="setBg('BGs/bg1.jpg', this)" style="background-image:url('BGs/bg1.jpg')"></div>
-        <div class="bg-thumb" onclick="setBg('BGs/bg2.jpg', this)" style="background-image:url('BGs/bg2.jpg')"></div>
-        <div class="bg-thumb" onclick="setBg('BGs/bg3.jpg', this)" style="background-image:url('BGs/bg3.jpg')"></div>
-        <div class="bg-thumb" onclick="setBg('BGs/bg4.jpg', this)" style="background-image:url('BGs/bg4.jpg')"></div>
-        <div class="bg-thumb" onclick="setBg('BGs/bg5.png', this)" style="background-image:url('BGs/bg5.png')"></div>
+        <div class="bg-thumb selected" onclick="setBg('images/BGs/bg1.jpg', this)" style="background-image:url('images/BGs/bg1.jpg')"></div>
+        <div class="bg-thumb" onclick="setBg('images/BGs/bg2.jpg', this)" style="background-image:url('images/BGs/bg2.jpg')"></div>
+        <div class="bg-thumb" onclick="setBg('images/BGs/bg3.jpg', this)" style="background-image:url('images/BGs/bg3.jpg')"></div>
+        <div class="bg-thumb" onclick="setBg('images/BGs/bg4.jpg', this)" style="background-image:url('images/BGs/bg4.jpg')"></div>
+        <div class="bg-thumb" onclick="setBg('images/BGs/bg5.png', this)" style="background-image:url('images/BGs/bg5.png')"></div>
       </div>
       <div class="import-row">
         <button class="import-btn" onclick="document.getElementById('bg-file-input').click()">
@@ -461,6 +464,10 @@
   </div>
 </div>
 
-<script src="script.js"></script>
+<script src="js/state.js"></script>
+<script src="js/core.js"></script>
+<script src="js/fs.js"></script>
+<script src="js/apps.js"></script>
+<script src="js/startup.js"></script>
 </body>
 </html>
