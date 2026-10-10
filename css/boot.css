@@ -41,6 +41,9 @@
   animation: loadFill 2s ease-in-out forwards;
   border-radius: 3px;
 }
+@keyframes loadFill {
+  to { width: 100%; }
+}
 
 /* boot / lock screen */
 #boot {
