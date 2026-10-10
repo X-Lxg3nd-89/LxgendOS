@@ -67,7 +67,7 @@
 #boot-bg {
   position: absolute;
   inset: -40px;
-  background: url('../images/bg5.png') center/cover;
+  background: url('../images/BGs/bg5.png') center/cover;
   filter: blur(40px);
 }
 #boot-dim { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
