@@ -329,6 +329,27 @@
   <div class="resize-handle" onmousedown="startResize(event, 'win-store')"></div>
 </div>
 
+<div class="window chessapp" id="win-chess">
+  <div class="win-title" onmousedown="startDrag(event, 'win-chess')">
+    <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><path d="M8 4h8v3l-1 2 2 3v2H7v-2l2-3-1-2zM6 16h12v3H6z" class="acc"/></svg>Chess</div>
+    <div class="dots">
+      <button class="dot green" onclick="maxWin('chess')"></button>
+      <button class="dot yellow" onclick="minWin('chess')"></button>
+      <button class="dot red" onclick="closeWin('chess')"></button>
+    </div>
+  </div>
+  <div class="win-body">
+    <div class="chess-toolbar">
+      <button onclick="chessNewGame()">New game</button>
+      <span class="chess-status" id="chess-status">White to move</span>
+    </div>
+    <div class="chess-board-wrap">
+      <div class="chess-board" id="chess-board"></div>
+    </div>
+  </div>
+  <div class="resize-handle" onmousedown="startResize(event, 'win-chess')"></div>
+</div>
+
 <div class="window browserapp" id="win-browser">
   <div class="win-title" onmousedown="startDrag(event, 'win-browser')">
     <div class="title-left"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" class="acc-stroke" stroke-width="2"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>Browser</div>
@@ -382,6 +403,9 @@
   </button>
   <button id="tb-shell" onclick="openWin('shell', this)" title="Shell">
     <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" class="acc"/><path d="M6 10l3 2-3 2M12 14h6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </button>
+  <button id="tb-chess" onclick="openWin('chess', this)" title="Chess">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M8 4h8v3l-1 2 2 3v2H7v-2l2-3-1-2zM6 16h12v3H6z" class="acc"/></svg>
   </button>
 </div>
 
