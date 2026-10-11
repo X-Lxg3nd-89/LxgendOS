@@ -437,4 +437,29 @@ body.light .mt-track::after { transform: translateX(16px); }
   cursor: pointer;
   transition: all .15s;
 }
+.paint-toolbar button {
+  min-width: 34px;
+  padding: 6px 10px;
+}
+
+.marquee {
+  position: absolute;
+  z-index: 60;
+  border: 1px solid var(--accent);
+  background: var(--highlight);
+  pointer-events: none;
+  display: none;
+}
+.marquee.active { display: block; }
+
+.fe-list { position: relative; }
+.fe-marquee {
+  position: absolute;
+  border: 1px solid var(--accent);
+  background: var(--highlight);
+  pointer-events: none;
+  display: none;
+  z-index: 5;
+}
+.fe-marquee.active { display: block; }
 .bh-links button:hover { background: var(--btn-hover); border-color: var(--accent); transform: translateY(-1px); }

@@ -61,6 +61,20 @@ var preAirBt = true;
 
 var storageKey = 'lxgendos-state-v1';
 
+// new state for this feature set
+var marqueeEl = null;
+var marqueeStart = null;
+var isMarqueeActive = false;
+var feMarqueeEl = null;
+var feMarqueeStart = null;
+var isFeMarqueeActive = false;
+var selectedIcons = [];
+var paintStartX = 0, paintStartY = 0;
+var paintPreviewImg = null;
+var paintDrawingShape = false;
+var paintTextX = 0, paintTextY = 0;
+var snapToGrid = true;
+
 function saveState() {
   try {
     var state = {
@@ -74,6 +88,7 @@ function saveState() {
       qsState: qsState,
       preAirWifi: preAirWifi,
       preAirBt: preAirBt,
+      snapToGrid: snapToGrid,
       windowPositions: {}
     };
     for (var id in openWindows) {
@@ -85,7 +100,7 @@ function saveState() {
       };
     }
     localStorage.setItem(storageKey, JSON.stringify(state));
-  } catch (e) { /* quota or private mode */ }
+  } catch (e) { }
 }
 
 function loadState() {
@@ -113,6 +128,7 @@ function applySavedState() {
   }
   if (s.light) document.body.classList.add('light');
   if (s.iconPositions) iconPositions = s.iconPositions;
+  if (s.snapToGrid !== undefined) snapToGrid = s.snapToGrid;
   if (s.qsState) {
     qsState = s.qsState;
     if (qsState.air) document.body.classList.add('airplane-mode');
@@ -157,5 +173,5 @@ function showToast(title, body) {
   setTimeout(function () {
     toast.classList.add('fade-out');
     setTimeout(function () { toast.remove(); }, 320);
-  }, 10000);
+  }, 3000);
 }
