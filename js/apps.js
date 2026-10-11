@@ -576,10 +576,9 @@ function browserReload() {
 // ============================================================
 
 var PIECES = {
-  'wK': '♔', 'wQ': '♕', 'wR': '♕', 'wB': '♗', 'wN': '♘', 'wP': '♘',
-  'bK': '♚', 'bQ': '♛', 'bR': '♛', 'bB': '♝', 'bN': '♞', 'bP': '♞'
+  'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
+  'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
 };
-
 function chessInit() {
   if (!chessState) chessNewGame();
   else chessRender();
