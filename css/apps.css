@@ -496,7 +496,12 @@ body.light .mt-track::after { transform: translateX(16px); }
 }
 .chess-sq.light { background: #e8d8c0; }
 .chess-sq.dark { background: #7a5a3a; }
-.chess-sq .piece { z-index: 2; filter: drop-shadow(1px 2px 2px rgba(0,0,0,.4)); }
+.chess-sq .piece {
+  z-index: 2;
+  filter: drop-shadow(1px 2px 2px rgba(0,0,0,.4));
+  font-variant-emoji: text;
+  font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2', 'DejaVu Sans', serif;
+}
 .chess-sq.white .piece { color: #fff; text-shadow: 0 0 1px #000, 0 0 1px #000, 0 0 1px #000; }
 .chess-sq.black .piece { color: #111; }
 .chess-sq.selected::after {
