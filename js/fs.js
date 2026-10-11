@@ -76,6 +76,7 @@ function feRender() {
     shown++;
     var div = document.createElement('div');
     div.className = 'fe-item';
+    div.dataset.name = name;
     var icon;
     if (child.type === 'folder') icon = '<svg viewBox="0 0 24 24" fill="none"><path d="M3 6a1 1 0 011-1h6l2 2h11a1 1 0 011 1v11a1 1 0 01-1 1H4a1 1 0 01-1-1V6z" class="acc"/></svg>';
     else if (child.type === 'app') icon = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" class="acc"/></svg>';
@@ -263,3 +264,69 @@ function confirmSave() {
   showToast('Saved', name);
   if (document.getElementById('win-fileexplorer').classList.contains('open')) feRender();
 }
+
+// rubber-band marquee inside file explorer
+document.addEventListener('mousedown', function (e) {
+  var list = document.getElementById('fe-list');
+  if (!list || !list.contains(e.target)) return;
+  if (e.target.closest('.fe-item')) return;
+  if (e.button !== 0) return;
+  if (e.target !== list) return;
+
+  isFeMarqueeActive = true;
+  feMarqueeStart = { x: e.clientX, y: e.clientY };
+
+  if (!feMarqueeEl) {
+    feMarqueeEl = document.createElement('div');
+    feMarqueeEl.className = 'fe-marquee';
+    list.appendChild(feMarqueeEl);
+  }
+
+  var listRect = list.getBoundingClientRect();
+  feMarqueeEl.style.left = (e.clientX - listRect.left + list.scrollLeft) + 'px';
+  feMarqueeEl.style.top = (e.clientY - listRect.top + list.scrollTop) + 'px';
+  feMarqueeEl.style.width = '0px';
+  feMarqueeEl.style.height = '0px';
+  feMarqueeEl.classList.add('active');
+
+  document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
+});
+
+document.addEventListener('mousemove', function (e) {
+  if (!isFeMarqueeActive || !feMarqueeEl) return;
+  var list = document.getElementById('fe-list');
+  if (!list) return;
+  var listRect = list.getBoundingClientRect();
+
+  var startX = feMarqueeStart.x - listRect.left + list.scrollLeft;
+  var startY = feMarqueeStart.y - listRect.top + list.scrollTop;
+  var curX = e.clientX - listRect.left + list.scrollLeft;
+  var curY = e.clientY - listRect.top + list.scrollTop;
+
+  var x = Math.min(startX, curX);
+  var y = Math.min(startY, curY);
+  var w = Math.abs(curX - startX);
+  var h = Math.abs(curY - startY);
+
+  feMarqueeEl.style.left = x + 'px';
+  feMarqueeEl.style.top = y + 'px';
+  feMarqueeEl.style.width = w + 'px';
+  feMarqueeEl.style.height = h + 'px';
+
+  var box = { l: x, t: y, r: x + w, b: y + h };
+
+  list.querySelectorAll('.fe-item').forEach(function (item) {
+    var ir = item.getBoundingClientRect();
+    var ix = ir.left - listRect.left + list.scrollLeft;
+    var iy = ir.top - listRect.top + list.scrollTop;
+    var ib = { l: ix, t: iy, r: ix + ir.width, b: iy + ir.height };
+    var hit = !(ib.r < box.l || ib.l > box.r || ib.b < box.t || ib.t > box.b);
+    if (hit) item.classList.add('selected');
+  });
+});
+
+document.addEventListener('mouseup', function () {
+  if (!isFeMarqueeActive) return;
+  isFeMarqueeActive = false;
+  if (feMarqueeEl) feMarqueeEl.classList.remove('active');
+});

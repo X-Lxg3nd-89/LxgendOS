@@ -250,6 +250,7 @@ function ivReset() {
   document.getElementById('iv-zoom-label').innerText = '100%';
 }
 
+// ============ PAINT ============
 function paintInit() {
   var canvas = document.getElementById('paint-canvas');
   paintCtx = canvas.getContext('2d');
@@ -258,39 +259,199 @@ function paintInit() {
   paintCtx.lineCap = 'round';
   paintCtx.lineJoin = 'round';
 
-  canvas.addEventListener('mousedown', function (e) {
-    paintDrawing = true;
-    paintCtx.beginPath();
+  canvas.addEventListener('mousedown', paintMouseDown);
+  canvas.addEventListener('mousemove', paintMouseMove);
+  document.addEventListener('mouseup', paintMouseUp);
+
+  var textInput = document.getElementById('paint-text-input');
+  textInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      var val = this.value;
+      if (val) {
+        paintCtx.fillStyle = document.getElementById('paint-color').value;
+        paintCtx.font = (parseInt(document.getElementById('paint-size').value) * 4 + 12) + 'px Inter';
+        paintCtx.fillText(val, paintTextX, paintTextY);
+      }
+      this.value = '';
+      this.style.display = 'none';
+    } else if (e.key === 'Escape') {
+      this.value = '';
+      this.style.display = 'none';
+    }
+  });
+}
+
+function paintMouseDown(e) {
+  var canvas = document.getElementById('paint-canvas');
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var x = (e.clientX - rect.left) * scaleX;
+  var y = (e.clientY - rect.top) * scaleY;
+
+  if (paintCurrentTool === 'picker') {
+    var pixel = paintCtx.getImageData(x, y, 1, 1).data;
+    var hex = '#' + [pixel[0], pixel[1], pixel[2]].map(function (v) {
+      var s = v.toString(16); return s.length === 1 ? '0' + s : s;
+    }).join('');
+    document.getElementById('paint-color').value = hex;
+    showToast('Picked colour', hex);
+    paintTool('brush');
+    return;
+  }
+
+  if (paintCurrentTool === 'fill') {
+    paintFloodFill(Math.floor(x), Math.floor(y), document.getElementById('paint-color').value);
+    return;
+  }
+
+  if (paintCurrentTool === 'text') {
+    var textInput = document.getElementById('paint-text-input');
+    textInput.style.left = e.clientX + 'px';
+    textInput.style.top = e.clientY + 'px';
+    textInput.style.display = 'block';
+    textInput.focus();
+    paintTextX = x;
+    paintTextY = y;
+    return;
+  }
+
+  if (paintCurrentTool === 'rect' || paintCurrentTool === 'circle' || paintCurrentTool === 'ellipse' || paintCurrentTool === 'line') {
+    paintDrawingShape = true;
+    paintStartX = x;
+    paintStartY = y;
+    paintPreviewImg = paintCtx.getImageData(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  paintDrawing = true;
+  paintCtx.beginPath();
+  paintCtx.moveTo(x, y);
+}
+
+function paintMouseMove(e) {
+  var canvas = document.getElementById('paint-canvas');
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var x = (e.clientX - rect.left) * scaleX;
+  var y = (e.clientY - rect.top) * scaleY;
+
+  if (paintDrawingShape && paintPreviewImg) {
+    paintCtx.putImageData(paintPreviewImg, 0, 0);
+    paintDrawShape(paintStartX, paintStartY, x, y, false);
+    return;
+  }
+
+  if (!paintDrawing) return;
+
+  var size = parseInt(document.getElementById('paint-size').value);
+  paintCtx.lineWidth = size * scaleX;
+  if (paintCurrentTool === 'eraser') paintCtx.strokeStyle = '#ffffff';
+  else paintCtx.strokeStyle = document.getElementById('paint-color').value;
+  paintCtx.lineTo(x, y);
+  paintCtx.stroke();
+}
+
+function paintMouseUp(e) {
+  if (paintDrawingShape) {
+    var canvas = document.getElementById('paint-canvas');
     var rect = canvas.getBoundingClientRect();
     var scaleX = canvas.width / rect.width;
     var scaleY = canvas.height / rect.height;
     var x = (e.clientX - rect.left) * scaleX;
     var y = (e.clientY - rect.top) * scaleY;
-    paintCtx.moveTo(x, y);
-  });
 
-  canvas.addEventListener('mousemove', function (e) {
-    if (!paintDrawing) return;
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
-    var x = (e.clientX - rect.left) * scaleX;
-    var y = (e.clientY - rect.top) * scaleY;
-    var size = parseInt(document.getElementById('paint-size').value);
-    paintCtx.lineWidth = size * scaleX;
-    if (paintCurrentTool === 'eraser') paintCtx.strokeStyle = '#ffffff';
-    else paintCtx.strokeStyle = document.getElementById('paint-color').value;
-    paintCtx.lineTo(x, y);
-    paintCtx.stroke();
-  });
+    paintCtx.putImageData(paintPreviewImg, 0, 0);
+    paintDrawShape(paintStartX, paintStartY, x, y, true);
+    paintDrawingShape = false;
+    paintPreviewImg = null;
+    return;
+  }
+  paintDrawing = false;
+}
 
-  document.addEventListener('mouseup', function () { paintDrawing = false; });
+function paintDrawShape(x1, y1, x2, y2, commit) {
+  paintCtx.strokeStyle = document.getElementById('paint-color').value;
+  var size = parseInt(document.getElementById('paint-size').value);
+  paintCtx.lineWidth = size;
+  paintCtx.beginPath();
+
+  if (paintCurrentTool === 'rect') {
+    paintCtx.rect(x1, y1, x2 - x1, y2 - y1);
+  } else if (paintCurrentTool === 'line') {
+    paintCtx.moveTo(x1, y1);
+    paintCtx.lineTo(x2, y2);
+  } else if (paintCurrentTool === 'circle') {
+    var r = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    paintCtx.arc(x1, y1, r, 0, Math.PI * 2);
+  } else if (paintCurrentTool === 'ellipse') {
+    var cx = (x1 + x2) / 2;
+    var cy = (y1 + y2) / 2;
+    var rx = Math.abs(x2 - x1) / 2;
+    var ry = Math.abs(y2 - y1) / 2;
+    paintCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  }
+
+  paintCtx.stroke();
+}
+
+function paintFloodFill(x, y, hex) {
+  var canvas = document.getElementById('paint-canvas');
+  var w = canvas.width, h = canvas.height;
+  var imgData = paintCtx.getImageData(0, 0, w, h);
+  var data = imgData.data;
+
+  function idx(px, py) { return (py * w + px) * 4; }
+  function get(i) { return [data[i], data[i + 1], data[i + 2], data[i + 3]]; }
+  function match(a, b) {
+    return Math.abs(a[0] - b[0]) < 12 && Math.abs(a[1] - b[1]) < 12 &&
+           Math.abs(a[2] - b[2]) < 12 && Math.abs(a[3] - b[3]) < 12;
+  }
+
+  var target = get(idx(x, y));
+  var fill = [
+    parseInt(hex.substr(1, 2), 16),
+    parseInt(hex.substr(3, 2), 16),
+    parseInt(hex.substr(5, 2), 16),
+    255
+  ];
+
+  if (match(target, fill)) return;
+
+  var stack = [[x, y]];
+  var visited = new Uint8Array(w * h);
+
+  while (stack.length) {
+    var p = stack.pop();
+    var px = p[0], py = p[1];
+    if (px < 0 || py < 0 || px >= w || py >= h) continue;
+    if (visited[py * w + px]) continue;
+    visited[py * w + px] = 1;
+
+    var i = idx(px, py);
+    if (!match(get(i), target)) continue;
+
+    data[i] = fill[0];
+    data[i + 1] = fill[1];
+    data[i + 2] = fill[2];
+    data[i + 3] = fill[3];
+
+    stack.push([px + 1, py]);
+    stack.push([px - 1, py]);
+    stack.push([px, py + 1]);
+    stack.push([px, py - 1]);
+  }
+
+  paintCtx.putImageData(imgData, 0, 0);
 }
 
 function paintTool(t) {
   paintCurrentTool = t;
-  document.getElementById('paint-brush').classList.toggle('active', t === 'brush');
-  document.getElementById('paint-eraser').classList.toggle('active', t === 'eraser');
+  ['brush', 'eraser', 'fill', 'picker', 'text', 'rect', 'circle', 'ellipse', 'line'].forEach(function (tool) {
+    var btn = document.getElementById('paint-' + tool);
+    if (btn) btn.classList.toggle('active', tool === t);
+  });
 }
 
 function paintClear() {
@@ -308,6 +469,25 @@ function paintSave() {
   a.click();
   showToast('Paint saved', 'Check your downloads');
 }
+
+function paintImport(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    var img = new Image();
+    img.onload = function () {
+      var canvas = document.getElementById('paint-canvas');
+      paintCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      showToast('Image imported', file.name);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// ============ STORE + BROWSER ============
 var storeApps = [
   { id: 'web', name: 'Web Browser', desc: 'Browse the web', icon: '🌐' },
   { id: 'music', name: 'Music Player', desc: 'Coming soon', icon: '🎵', disabled: true },
@@ -391,4 +571,3 @@ function browserReload() {
     setTimeout(function () { frame.src = src; }, 30);
   }
 }
-
