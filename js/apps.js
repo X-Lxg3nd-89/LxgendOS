@@ -4,7 +4,7 @@ function shellInit() {
   shellInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      var cmd = this.value.trim();
+      var cmd = this.ariaValueMax.trim();
       if (cmd) shellRun(cmd);
       this.value = '';
     }
@@ -25,7 +25,7 @@ function shellRun(cmd) {
   var line = document.getElementById('shell-input-line');
   var prompt = document.createElement('div');
   prompt.className = 'shell-line';
-  prompt.innerHTML = '<span class="shell-prompt">lxg&gt;</span><span>' + escHtml(cmd) + '</span>';
+  prompt.innerHTML = '<span class="shell-prompt">lxg&gt;</span><span>' + escapeHTML(cmd) + '</span>';
   body.insertBefore(prompt, line);
 
   var parts = cmd.split(' ');
@@ -250,12 +250,11 @@ function ivReset() {
   document.getElementById('iv-zoom-label').innerText = '100%';
 }
 
-// ============ PAINT ============
 function paintInit() {
   var canvas = document.getElementById('paint-canvas');
   paintCtx = canvas.getContext('2d');
   paintCtx.fillStyle = '#ffffff';
-  paintCtx.fillRect(0, 0, canvas.width, canvas.height);
+  paintCtx.fillRect(0, 0, canvas.clientWidth, canvas.height);
   paintCtx.lineCap = 'round';
   paintCtx.lineJoin = 'round';
 
@@ -296,7 +295,7 @@ function paintMouseDown(e) {
     }).join('');
     document.getElementById('paint-color').value = hex;
     showToast('Picked colour', hex);
-    paintTool('brush');
+    paintCurrentTool('brush');
     return;
   }
 
@@ -339,7 +338,7 @@ function paintMouseMove(e) {
 
   if (paintDrawingShape && paintPreviewImg) {
     paintCtx.putImageData(paintPreviewImg, 0, 0);
-    paintDrawShape(paintStartX, paintStartY, x, y, false);
+    paintDrawingShape(paintStartX, paintStartY, x, y, false);
     return;
   }
 
@@ -363,7 +362,7 @@ function paintMouseUp(e) {
     var y = (e.clientY - rect.top) * scaleY;
 
     paintCtx.putImageData(paintPreviewImg, 0, 0);
-    paintDrawShape(paintStartX, paintStartY, x, y, true);
+    paintDrawingShape(paintStartX, paintStartY, x, y, true);
     paintDrawingShape = false;
     paintPreviewImg = null;
     return;
@@ -487,14 +486,13 @@ function paintImport(e) {
   e.target.value = '';
 }
 
-// ============ STORE + BROWSER ============
 var storeApps = [
-  { id: 'web', name: 'Web Browser', desc: 'Browse the web', icon: '🌐' },
+  { id: 'web', name: 'Web Browser', desc: 'Browse the web', icon: '✕' },
   { id: 'music', name: 'Music Player', desc: 'Coming soon', icon: '🎵', disabled: true },
-  { id: 'mail', name: 'Mail', desc: 'Coming soon', icon: '✉️', disabled: true },
+  { id: 'mail', name: 'Mail', desc: 'Coming soon', icon: '✉✉', disabled: true },
   { id: 'code', name: 'Code Editor', desc: 'Coming soon', icon: '💻', disabled: true },
   { id: 'video', name: 'Video Player', desc: 'Coming soon', icon: '🎬', disabled: true },
-  { id: 'photos', name: 'Photos', desc: 'Coming soon', icon: '🖼️', disabled: true }
+  { id: 'photos', name: 'Photos', desc: 'Coming soon', icon: '🎬✉', disabled: true }
 ];
 
 function renderStore() {
@@ -570,4 +568,206 @@ function browserReload() {
     frame.src = 'about:blank';
     setTimeout(function () { frame.src = src; }, 30);
   }
+}
+
+// ============================================================
+// CHESS — basic 2-player. No castling, en passant, promotion,
+// or check detection. Just movement, capture, and turn order.
+// ============================================================
+
+var PIECES = {
+  'wK': '♔', 'wQ': '♕', 'wR': '♕', 'wB': '♗', 'wN': '♘', 'wP': '♘',
+  'bK': '♚', 'bQ': '♛', 'bR': '♛', 'bB': '♝', 'bN': '♞', 'bP': '♞'
+};
+
+function chessInit() {
+  if (!chessState) chessNewGame();
+  else chessRender();
+}
+
+function chessNewGame() {
+  chessState = {
+    board: [
+      ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+      ['bP','bP','bP','bP','bP','bP','bP','bP'],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      [null,null,null,null,null,null,null,null],
+      ['wP','wP','wP','wP','wP','wP','wP','wP'],
+      ['wR','wN','wB','wQ','wK','wB','wN','wR']
+    ],
+    turn: 'w',
+    selected: null,
+    legalMoves: []
+  };
+  chessRender();
+}
+
+function chessRender() {
+  var boardEl = document.getElementById('chess-board');
+  if (!boardEl) return;
+  boardEl.innerHTML = '';
+
+  for (var r = 0; r < 8; r++) {
+    for (var c = 0; c < 8; c++) {
+      var sq = document.createElement('div');
+      sq.className = 'chess-sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+
+      var piece = chessState.board[r][c];
+      if (piece) {
+        sq.classList.add(piece[0] === 'w' ? 'white' : 'black');
+        var span = document.createElement('span');
+        span.className = 'piece';
+        span.textContent = PIECES[piece];
+        sq.appendChild(span);
+      }
+
+      if (chessState.selected &&
+          chessState.selected.r === r &&
+          chessState.selected.c === c) {
+        sq.classList.add('selected');
+          }
+
+      var isLegal = chessState.legalMoves.some(function (m) {
+        return m.r === r && m.c === c;
+      });
+      if (isLegal) {
+        sq.classList.add('legal');
+        if (piece && piece[0] !== chessState.turn) sq.classList.add('capture');
+      }
+
+      sq.onclick = (function (rr, cc) {
+        return function () { chessClick(rr, cc); };
+      })(r, c);
+
+      boardEl.appendChild(sq);
+    }
+  }
+
+  var status = document.getElementById('chess-status');
+  if (status) {
+    status.textContent = chessState.turn === 'w' ? 'White to move' : 'Black to move';
+  }
+}
+
+function chessClick(r, c) {
+  var piece = chessState.board[r][c];
+
+  var move = chessState.legalMoves.find(function (m) {
+    return m.r === r && m.c === c;
+  });
+  if (move) {
+    chessMove(chessState.selected, { r: r, c: c });
+    return;
+  }
+
+  if (piece && piece[0] === chessState.turn) {
+    chessState.selected = { r: r, c: c };
+    chessState.legalMoves = chessLegalMoves(r, c);
+  } else {
+    chessState.selected = null;
+    chessState.legalMoves = [];
+  }
+  chessRender();
+}
+
+function chessMove(from, to) {
+  var piece = chessState.board[from.r][from.c];
+  chessState.board[to.r][to.c] = piece;
+  chessState.board[from.r][from.c] = null;
+  chessState.selected = null;
+  chessState.legalMoves = [];
+  chessState.turn = chessState.turn === 'w' ? 'b' : 'w';
+  chessRender();
+}
+
+function chessLegalMoves(r, c) {
+  var piece = chessState.board[r][c];
+  if (!piece) return [];
+  var color = piece[0];
+  var type = piece[1];
+  var moves = [];
+
+  function inBounds(rr, cc) {
+    return rr >= 0 && rr < 8 && cc >= 0 && cc < 8;
+  }
+
+  function canLand(rr, cc) {
+    var target = chessState.board[rr][cc];
+    return !target || target[0] !== color;
+  }
+
+  function push(rr, cc) {
+    if (!inBounds(rr, cc)) return false;
+    if (!canLand(rr, cc)) return false;
+    moves.push({ r: rr, c: cc });
+    return true;
+  }
+
+  if (type === 'P') {
+    var dir = color === 'w' ? -1 : 1;
+    var startRow = color === 'w' ? 6 : 1;
+
+    if (inBounds(r + dir, c) && !chessState.board[r + dir][c]) {
+      moves.push({ r: r + dir, c: c });
+      if (r === startRow && !chessState.board[r + 2 * dir][c]) {
+        moves.push({ r: r + 2 * dir, c: c });
+      }
+    }
+    [-1, 1].forEach(function (dc) {
+      var rr = r + dir, cc = c + dc;
+      if (inBounds(rr, cc)) {
+        var t = chessState.board[rr][cc];
+        if (t && t[0] !== color) moves.push({ r: rr, c: cc });
+      }
+    });
+  }
+
+  if (type === 'N') {
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(function (d) {
+      push(r + d[0], c + d[1]);
+    });
+  }
+
+  if (type === 'B') {
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(function (d) {
+      var rr = r + d[0], cc = c + d[1];
+      while (inBounds(rr, cc)) {
+        if (!push(rr, cc)) break;
+        if (chessState.board[rr][cc]) break;
+        rr += d[0]; cc += d[1];
+      }
+    });
+  }
+
+  if (type === 'R') {
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(function (d) {
+      var rr = r + d[0], cc = c + d[1];
+      while (inBounds(rr, cc)) {
+        if (!push(rr, cc)) break;
+        if (chessState.board[rr][cc]) break;
+        rr += d[0]; cc += d[1];
+      }
+    });
+  }
+
+  if (type === 'Q') {
+    [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(function (d) {
+      var rr = r + d[0], cc = c + d[1];
+      while (inBounds(rr, cc)) {
+        if (!push(rr, cc)) break;
+        if (chessState.board[rr][cc]) break;
+        rr += d[0]; cc += d[1];
+      }
+    });
+  }
+
+  if (type === 'K') {
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(function (d) {
+      push(r + d[0], c + d[1]);
+    });
+  }
+
+  return moves;
 }

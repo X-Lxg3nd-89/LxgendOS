@@ -254,6 +254,7 @@ function openWin(id, sourceEl) {
 
   if (id === 'fileexplorer') feRender();
   if (id === 'store') renderStore();
+  if (id === 'chess') chessInit();
   if (id === 'shell') setTimeout(function () { if (shellInput) shellInput.focus(); }, 100);
 
   closeStartMenu();
@@ -323,6 +324,10 @@ function resetFiles() {
   document.getElementById('fe-search').value = '';
 }
 
+function resetChess() {
+  chessState = null;
+}
+
 function closeWin(id) {
   var w = document.getElementById("win-" + id);
   if (!w) return;
@@ -340,6 +345,7 @@ function closeWin(id) {
   else if (id === 'paint') resetPaint();
   else if (id === 'browser') resetBrowser();
   else if (id === 'fileexplorer') resetFiles();
+  else if (id === 'chess') resetChess();
 }
 
 function minWin(id) {
@@ -419,7 +425,8 @@ function doDrag(e) {
 
 function showSnapPreview(zone) {
   var preview = document.getElementById('snap-preview');
-  if (!preview) {    preview = document.createElement('div');
+  if (!preview) {
+    preview = document.createElement('div');
     preview.id = 'snap-preview';
     preview.className = 'snap-preview';
     document.body.appendChild(preview);
@@ -843,7 +850,6 @@ function arrangeIcons(mode) {
   showToast('Arranged', mode === 'auto' ? 'Auto' : 'By ' + mode);
 }
 
-// click outside handlers
 document.addEventListener('click', function (e) {
   var qs = document.getElementById('quick-settings');
   var tray = document.querySelector('.tray');
@@ -869,7 +875,6 @@ document.addEventListener('click', function (e) {
   }
 });
 
-// marquee on desktop
 document.addEventListener('mousedown', function (e) {
   if (e.target.closest('.window')) return;
   if (e.target.closest('.icon')) return;

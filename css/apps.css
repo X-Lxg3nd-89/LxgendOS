@@ -437,10 +437,95 @@ body.light .mt-track::after { transform: translateX(16px); }
   cursor: pointer;
   transition: all .15s;
 }
-.paint-toolbar button {
-  min-width: 34px;
-  padding: 6px 10px;
+.bh-links button:hover { background: var(--btn-hover); border-color: var(--accent); transform: translateY(-1px); }
+
+/* chess */
+.chessapp { width: 620px; height: 640px; }
+.chess-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--win-bg);
+  border-bottom: 1px solid var(--win-border);
+  flex-shrink: 0;
 }
+.chess-toolbar button {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--btn);
+  border: 1px solid var(--win-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.chess-toolbar button:hover { background: var(--btn-hover); }
+.chess-status {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chess-board-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2018;
+  overflow: hidden;
+}
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 540px;
+  height: 540px;
+  border: 4px solid #1a1210;
+  box-shadow: 0 20px 60px rgba(0,0,0,.8);
+}
+.chess-sq {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+}
+.chess-sq.light { background: #e8d8c0; }
+.chess-sq.dark { background: #7a5a3a; }
+.chess-sq .piece { z-index: 2; filter: drop-shadow(1px 2px 2px rgba(0,0,0,.4)); }
+.chess-sq.white .piece { color: #fff; text-shadow: 0 0 1px #000, 0 0 1px #000, 0 0 1px #000; }
+.chess-sq.black .piece { color: #111; }
+.chess-sq.selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 4px var(--accent);
+  pointer-events: none;
+}
+.chess-sq.legal::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+.chess-sq.legal.capture::after {
+  width: 85%;
+  height: 85%;
+  border-radius: 50%;
+  background: transparent;
+  border: 4px solid rgba(200, 0, 0, 0.6);
+  box-sizing: border-box;
+}
+
+/* marquee + file explorer rubber band */
+.paint-toolbar button { min-width: 34px; padding: 6px 10px; }
 
 .marquee {
   position: absolute;
@@ -462,4 +547,4 @@ body.light .mt-track::after { transform: translateX(16px); }
   z-index: 5;
 }
 .fe-marquee.active { display: block; }
-.bh-links button:hover { background: var(--btn-hover); border-color: var(--accent); transform: translateY(-1px); }
+
