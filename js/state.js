@@ -198,7 +198,7 @@ var APPS = {
   browser: { name: 'Browser', showDesktop: true, icon: '<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" fill="none" class="acc-stroke" stroke-width="3"/><path d="M6 24h36M24 6a30 30 0 010 36M24 6a30 30 0 000 36" stroke="currentColor" stroke-width="2" fill="none"/></svg>' }
 };
 
-var pinnedApps = ['fileexplorer', 'store', 'browser', 'clock', 'notepad', 'shell'];
+var pinnedApps = ['fileexplorer', 'store', 'browser', 'chess', 'clock', 'notepad', 'shell'];
 var shellInitialHTML = document.getElementById('shell-body').innerHTML;
 
 var zTop = 10;
