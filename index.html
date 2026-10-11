@@ -20,7 +20,6 @@
   <div class="loading-bar"></div>
 </div>
 
-<!-- boot / lock screen -->
 <div id="boot" onclick="dismissBoot()">
   <div id="boot-bg"></div>
   <div id="boot-dim"></div>
@@ -287,15 +286,26 @@
     <div class="paint-toolbar">
       <button id="paint-brush" class="active" onclick="paintTool('brush')">Brush</button>
       <button id="paint-eraser" onclick="paintTool('eraser')">Eraser</button>
-      <input type="color" id="paint-color" value="#0078d4">
+      <button id="paint-fill" onclick="paintTool('fill')">Fill</button>
+      <button id="paint-picker" onclick="paintTool('picker')">Picker</button>
+      <button id="paint-text" onclick="paintTool('text')">Text</button>
+      <button id="paint-rect" onclick="paintTool('rect')">▭</button>
+      <button id="paint-circle" onclick="paintTool('circle')">▭</button>
+      <button id="paint-ellipse" onclick="paintTool('ellipse')">⬭</button>
+      <button id="paint-line" onclick="paintTool('line')">╱</button>
+      <input type="color" id="paint-color" value="#a855f7">
       <label>Size</label>
       <input type="range" id="paint-size" min="1" max="40" value="4">
+      <button onclick="document.getElementById('paint-img-input').click()">Import</button>
+      <input type="file" id="paint-img-input" accept="image/*" style="display:none" onchange="paintImport(event)">
       <button onclick="paintClear()">Clear</button>
       <button onclick="paintSave()">Save PNG</button>
     </div>
     <div class="paint-canvas-wrap">
       <canvas id="paint-canvas" width="1200" height="800"></canvas>
     </div>
+    <input type="text" id="paint-text-input" placeholder="Type and press Enter"
+      style="display:none; position:fixed; z-index:10; padding:6px 10px; font-size:13px; background:var(--popup-bg); color:var(--text); border:1px solid var(--accent); border-radius:4px; outline:none;">
   </div>
   <div class="resize-handle" onmousedown="startResize(event, 'win-paint')"></div>
 </div>
@@ -331,7 +341,7 @@
   <div class="win-body">
     <div class="browser-toolbar">
       <button onclick="browserBack()" title="Back">←</button>
-      <button onclick="browserForward()" title="Forward">→</button>
+      <button onclick="browserForward()" title="Forward">╱</button>
       <button onclick="browserReload()" title="Reload">⟳</button>
       <input class="browser-url" id="browser-url" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserGo(this.value)">
     </div>
