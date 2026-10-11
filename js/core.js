@@ -52,6 +52,7 @@ function renderDesktopIcons() {
   container.innerHTML = '';
   var col = 0, row = 0;
   var iconIndex = 0;
+
   for (var id in APPS) {
     var app = APPS[id];
     if (!app.showDesktop) continue;
@@ -63,6 +64,7 @@ function renderDesktopIcons() {
     var div = document.createElement('div');
     div.className = 'icon';
     div.id = 'di-' + id;
+    div.dataset.appId = id;
     div.style.left = iconPositions[id].x + 'px';
     div.style.top = iconPositions[id].y + 'px';
     div.style.animationDelay = (iconIndex * 0.045) + 's';
@@ -70,26 +72,56 @@ function renderDesktopIcons() {
     iconIndex++;
 
     (function (appId, el) {
-      el.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (selectedIcon && selectedIcon !== el) selectedIcon.classList.remove('selected');
-        el.classList.add('selected');
-        selectedIcon = el;
+      el.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest('.icon') !== el) return;
+
+        if (e.ctrlKey || e.metaKey) {
+          e.stopPropagation();
+          if (selectedIcons.indexOf(appId) !== -1) {
+            selectedIcons.splice(selectedIcons.indexOf(appId), 1);
+            el.classList.remove('selected');
+          } else {
+            selectedIcons.push(appId);
+            el.classList.add('selected');
+          }
+          selectedIcon = selectedIcons.length === 1 ? el : null;
+          return;
+        }
+
+        if (e.shiftKey && selectedIcons.length > 0) {
+          e.stopPropagation();
+          var allIds = Object.keys(APPS).filter(function (a) { return APPS[a].showDesktop; });
+          var anchor = allIds.indexOf(selectedIcons[0]);
+          var target = allIds.indexOf(appId);
+          var start = Math.min(anchor, target);
+          var end = Math.max(anchor, target);
+          selectedIcons = allIds.slice(start, end + 1);
+          applySelection();
+          return;
+        }
+
+        if (selectedIcons.indexOf(appId) === -1) {
+          selectedIcons = [appId];
+          applySelection();
+        }
       });
+
       el.addEventListener('dblclick', function (e) {
         e.stopPropagation();
-        el.classList.remove('selected');
-        selectedIcon = null;
         openWin(appId, el);
       });
+
       el.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        if (selectedIcon && selectedIcon !== el) selectedIcon.classList.remove('selected');
-        el.classList.add('selected');
-        selectedIcon = el;
+        if (selectedIcons.indexOf(appId) === -1) {
+          selectedIcons = [appId];
+          applySelection();
+        }
         showIconContextMenu(e.clientX, e.clientY, appId);
       });
+
       makeIconDraggable(el, appId);
     })(id, div);
 
@@ -97,38 +129,79 @@ function renderDesktopIcons() {
   }
 }
 
+function applySelection() {
+  document.querySelectorAll('.icon').forEach(function (el) {
+    var id = el.dataset.appId;
+    if (selectedIcons.indexOf(id) !== -1) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+  selectedIcon = selectedIcons.length === 1 ? document.getElementById('di-' + selectedIcons[0]) : null;
+}
+
 function makeIconDraggable(el, id) {
   var dragging = false;
-  var startX = 0, startY = 0, startL = 0, startT = 0;
+  var startX = 0, startY = 0;
+  var groupData = [];
+
   el.addEventListener('mousedown', function (e) {
     if (e.target.closest('.icon') !== el) return;
+    if (e.button !== 0) return;
+
     dragging = true;
     startX = e.clientX;
     startY = e.clientY;
-    startL = parseInt(el.style.left) || 0;
-    startT = parseInt(el.style.top) || 0;
+
+    var groupIds = selectedIcons.indexOf(id) !== -1 && selectedIcons.length > 1
+      ? selectedIcons.slice()
+      : [id];
+
+    groupData = groupIds.map(function (gid) {
+      var gEl = document.getElementById('di-' + gid);
+      return {
+        el: gEl,
+        id: gid,
+        startL: parseInt(gEl.style.left) || 0,
+        startT: parseInt(gEl.style.top) || 0
+      };
+    });
+
+    groupData.forEach(function (d) { d.el.classList.add('dragging'); });
     e.preventDefault();
   });
+
   document.addEventListener('mousemove', function (e) {
     if (!dragging) return;
-    el.classList.add('dragging');
-    el.style.left = (startL + e.clientX - startX) + 'px';
-    el.style.top = (startT + e.clientY - startY) + 'px';
+    var dx = e.clientX - startX;
+    var dy = e.clientY - startY;
+    groupData.forEach(function (d) {
+      d.el.style.left = (d.startL + dx) + 'px';
+      d.el.style.top = (d.startT + dy) + 'px';
+    });
   });
+
   document.addEventListener('mouseup', function () {
     if (!dragging) return;
     dragging = false;
-    el.classList.remove('dragging');
-    var x = parseInt(el.style.left);
-    var y = parseInt(el.style.top);
-    var snappedX = Math.round((x - gridPadding) / gridSize) * gridSize + gridPadding;
-    var snappedY = Math.round((y - gridPadding) / gridSize) * gridSize + gridPadding;
-    if (snappedX < gridPadding) snappedX = gridPadding;
-    if (snappedY < gridPadding) snappedY = gridPadding;
-    if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150 - gridPadding) / gridSize) * gridSize + gridPadding;
-    el.style.left = snappedX + 'px';
-    el.style.top = snappedY + 'px';
-    iconPositions[id] = { x: snappedX, y: snappedY };
+
+    groupData.forEach(function (d) {
+      d.el.classList.remove('dragging');
+      var x = parseInt(d.el.style.left);
+      var y = parseInt(d.el.style.top);
+
+      if (snapToGrid) {
+        var snappedX = Math.round((x - gridPadding) / gridSize) * gridSize + gridPadding;
+        var snappedY = Math.round((y - gridPadding) / gridSize) * gridSize + gridPadding;
+        if (snappedX < gridPadding) snappedX = gridPadding;
+        if (snappedY < gridPadding) snappedY = gridPadding;
+        if (snappedY > window.innerHeight - 150) snappedY = Math.floor((window.innerHeight - 150 - gridPadding) / gridSize) * gridSize + gridPadding;
+        d.el.style.left = snappedX + 'px';
+        d.el.style.top = snappedY + 'px';
+        iconPositions[d.id] = { x: snappedX, y: snappedY };
+      } else {
+        iconPositions[d.id] = { x: x, y: y };
+      }
+    });
+
     saveState();
   });
 }
@@ -332,7 +405,6 @@ function doDrag(e) {
   dragTarget.style.left = (e.clientX - dragX) + "px";
   dragTarget.style.top = (e.clientY - dragY) + "px";
 
-  // snap zone detection
   var edge = 30;
   var zone = null;
   if (e.clientX < edge) zone = 'left';
@@ -347,8 +419,7 @@ function doDrag(e) {
 
 function showSnapPreview(zone) {
   var preview = document.getElementById('snap-preview');
-  if (!preview) {
-    preview = document.createElement('div');
+  if (!preview) {    preview = document.createElement('div');
     preview.id = 'snap-preview';
     preview.className = 'snap-preview';
     document.body.appendChild(preview);
@@ -719,8 +790,17 @@ function showDesktopContextMenu(x, y) {
   addCtxItem(menu, 'Open Files', function () { openWin('fileexplorer'); });
   addCtxItem(menu, 'Open Shell', function () { openWin('shell'); });
   menu.appendChild(document.createElement('div')).className = 'ctx-sep';
+  addCtxItem(menu, 'Arrange by name', function () { arrangeIcons('name'); });
+  addCtxItem(menu, 'Arrange by type', function () { arrangeIcons('type'); });
+  addCtxItem(menu, 'Auto arrange', function () { arrangeIcons('auto'); });
+  addCtxItem(menu, snapToGrid ? 'Snap to grid: ON' : 'Snap to grid: OFF', function () {
+    snapToGrid = !snapToGrid;
+    showToast('Snap to grid', snapToGrid ? 'On' : 'Off');
+    saveState();
+  });
+  menu.appendChild(document.createElement('div')).className = 'ctx-sep';
   addCtxItem(menu, 'Refresh', function () { renderDesktopIcons(); showToast('Desktop refreshed', ''); });
-  addCtxItem(menu, 'About LxgendOS', function () { showToast('LxgendOS v1.0', 'A web desktop by Lxg3nd'); });
+  addCtxItem(menu, 'About LxgendOS', function () { showToast('LxgendOS v1.0', 'A web desktop by ghst'); });
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
   menu.classList.add('open');
@@ -734,6 +814,36 @@ function addCtxItem(menu, label, handler) {
   menu.appendChild(item);
 }
 
+function arrangeIcons(mode) {
+  var ids = Object.keys(APPS).filter(function (id) { return APPS[id].showDesktop; });
+
+  if (mode === 'name') {
+    ids.sort(function (a, b) { return APPS[a].name.localeCompare(APPS[b].name); });
+  } else if (mode === 'type') {
+    ids.sort(function (a, b) { return APPS[a].name.localeCompare(APPS[b].name); });
+  }
+
+  var col = 0, row = 0;
+  ids.forEach(function (id) {
+    var x = gridPadding + col * gridSize;
+    var y = gridPadding + row * gridSize;
+    iconPositions[id] = { x: x, y: y };
+    var el = document.getElementById('di-' + id);
+    if (el) {
+      el.style.transition = 'left .3s ease, top .3s ease';
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      setTimeout(function () { el.style.transition = ''; }, 320);
+    }
+    row++;
+    if (row > 5) { row = 0; col++; }
+  });
+
+  saveState();
+  showToast('Arranged', mode === 'auto' ? 'Auto' : 'By ' + mode);
+}
+
+// click outside handlers
 document.addEventListener('click', function (e) {
   var qs = document.getElementById('quick-settings');
   var tray = document.querySelector('.tray');
@@ -747,13 +857,102 @@ document.addEventListener('click', function (e) {
   if (ctx.classList.contains('open') && !ctx.contains(e.target)) ctx.classList.remove('open');
 
   if (!e.target.closest('.icon')) {
-    if (selectedIcon) { selectedIcon.classList.remove('selected'); selectedIcon = null; }
+    if (selectedIcons.length > 1) return;
+    selectedIcons = [];
+    applySelection();
   }
   if (!e.target.closest('.fe-item')) {
     document.querySelectorAll('.fe-item.selected').forEach(function (i) { i.classList.remove('selected'); });
   }
   if (!e.target.closest('.start-app')) {
     document.querySelectorAll('.start-app.selected').forEach(function (i) { i.classList.remove('selected'); });
+  }
+});
+
+// marquee on desktop
+document.addEventListener('mousedown', function (e) {
+  if (e.target.closest('.window')) return;
+  if (e.target.closest('.icon')) return;
+  if (e.target.closest('.taskbar')) return;
+  if (e.target.closest('.tray')) return;
+  if (e.target.closest('.quick-settings')) return;
+  if (e.target.closest('.start-menu')) return;
+  if (e.target.closest('.ctx-menu')) return;
+  if (e.button !== 0) return;
+
+  isMarqueeActive = true;
+  marqueeStart = { x: e.clientX, y: e.clientY };
+
+  if (!marqueeEl) {
+    marqueeEl = document.createElement('div');
+    marqueeEl.className = 'marquee';
+    document.body.appendChild(marqueeEl);
+  }
+  marqueeEl.style.left = e.clientX + 'px';
+  marqueeEl.style.top = e.clientY + 'px';
+  marqueeEl.style.width = '0px';
+  marqueeEl.style.height = '0px';
+  marqueeEl.classList.add('active');
+
+  if (!e.ctrlKey && !e.metaKey) {
+    selectedIcons = [];
+    applySelection();
+  }
+});
+
+document.addEventListener('mousemove', function (e) {
+  if (!isMarqueeActive || !marqueeEl) return;
+  var x = Math.min(marqueeStart.x, e.clientX);
+  var y = Math.min(marqueeStart.y, e.clientY);
+  var w = Math.abs(e.clientX - marqueeStart.x);
+  var h = Math.abs(e.clientY - marqueeStart.y);
+  marqueeEl.style.left = x + 'px';
+  marqueeEl.style.top = y + 'px';
+  marqueeEl.style.width = w + 'px';
+  marqueeEl.style.height = h + 'px';
+
+  var box = { l: x, t: y, r: x + w, b: y + h };
+  document.querySelectorAll('.icon').forEach(function (el) {
+    var r = el.getBoundingClientRect();
+    var hit = !(r.right < box.l || r.left > box.r || r.bottom < box.t || r.top > box.b);
+    var id = el.dataset.appId;
+    if (hit) {
+      if (selectedIcons.indexOf(id) === -1) selectedIcons.push(id);
+      el.classList.add('selected');
+    } else if (!e.ctrlKey && !e.metaKey) {
+      var idx = selectedIcons.indexOf(id);
+      if (idx !== -1) selectedIcons.splice(idx, 1);
+      el.classList.remove('selected');
+    }
+  });
+});
+
+document.addEventListener('mouseup', function (e) {
+  if (!isMarqueeActive) return;
+  isMarqueeActive = false;
+  if (marqueeEl) marqueeEl.classList.remove('active');
+  selectedIcon = selectedIcons.length === 1 ? document.getElementById('di-' + selectedIcons[0]) : null;
+});
+
+document.addEventListener('keydown', function (e) {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIcons.length > 0) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.closest('.window') && e.target.closest('.window').id !== 'win-fileexplorer') return;
+    e.preventDefault();
+    selectedIcons.forEach(function (id) {
+      var el = document.getElementById('di-' + id);
+      if (el) {
+        el.style.transition = 'opacity .2s, transform .2s';
+        el.style.opacity = '0';
+        el.style.transform = 'scale(.7)';
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 220);
+      }
+      delete iconPositions[id];
+    });
+    showToast('Removed', selectedIcons.length + ' icon(s) from desktop');
+    selectedIcons = [];
+    selectedIcon = null;
+    saveState();
   }
 });
 
